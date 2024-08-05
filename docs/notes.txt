@@ -1,0 +1,40 @@
+User guide:
+https://dev.opencascade.org/doc/overview/html/index.html
+
+Relevant sections:
+User Guides -> Foundation Classes, Modeling Data, Modeling Algorithms
+
+Series of 6 blog posts about geometry and topology:
+https://opencascade.blogspot.com/2009/02/topology-and-geometry-in-open-cascade.html
+
+Standard types:
+https://dev.opencascade.org/doc/refman/html/_standard___type_def_8hxx.html
+
+Blog post about handles and const references:
+https://opencascade.blogspot.com/2009/08/const-handle-vs-handle.html
+
+Toolkit TKMath
+	- Precision, provides Precision::Confusion()
+	- gp, provides low-level geometrical primitives
+	https://dev.opencascade.org/doc/refman/html/package_gp.html
+
+Toolkit TKBRep
+	- BRep: provides BRep_Builder, BRep_TVertex, BRep_TEdge, BRep_TFace,
+	BRep_Tool::Pnt, BRep_Tool::Curve, BRep_Tool::Surface, BRep_Tool::CurveOnSurface,
+	BRep_Tool::SameRange, BRep_Tool::SameParameter,
+	BRep_Tool::IsClosed, BRep_Tool::Degenerated
+	- TopExp: provides TopExp_Explorer, TopExp::MapShapesAndAncestors
+	- TopoDS: provides TopoDS_Shape, TopoDS_TShape, TopoDS_Iterator
+	https://dev.opencascade.org/doc/refman/html/class_topo_d_s___shape.html
+	https://dev.opencascade.org/doc/refman/html/class_topo_d_s___t_shape.html
+
+Toolkit TKG3d
+	- Geom: provides Geom_Curve, Geom_Surface
+	- TopAbs: provides TopAbs_Orientation, TopAbs_ShapeEnum, TopAbs_State
+
+Toolkit TKTopAlgo
+	- BRepBuilderAPI: provides BRepBuilderAPI_NurbsConvert, BRepBuilderAPI_MakeVertex,
+	BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeFace
+	- BRepClass: provides BRepClass_FaceClassifier, BRepClass_FaceExplorer
+	- BRepClass3d: provides BRepClass3d_SolidClassifier, BRepClass3d_SolidExplorer
+
