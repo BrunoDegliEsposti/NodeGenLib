@@ -35,18 +35,18 @@ void plotParametricNodes(int figid, const Nodes<2> &Z, const Nodes<2> &Y)
     // Sample pcurve and its normals
     size_t NZ = Z.points.size();
     size_t NY = Y.points.size();
-    mxArray *Zpx = mxCreateDoubleMatrix(NZ, 1, mxREAL);
-    mxArray *Zpy = mxCreateDoubleMatrix(NZ, 1, mxREAL);
-    mxArray *Znx = mxCreateDoubleMatrix(NZ, 1, mxREAL);
-    mxArray *Zny = mxCreateDoubleMatrix(NZ, 1, mxREAL);
-    mxArray *Ypx = mxCreateDoubleMatrix(NY, 1, mxREAL);
-    mxArray *Ypy = mxCreateDoubleMatrix(NY, 1, mxREAL);
-    double *Zpx_buf = mxGetDoubles(Zpx);
-    double *Zpy_buf = mxGetDoubles(Zpy);
-    double *Znx_buf = mxGetDoubles(Znx);
-    double *Zny_buf = mxGetDoubles(Zny);
-    double *Ypx_buf = mxGetDoubles(Ypx);
-    double *Ypy_buf = mxGetDoubles(Ypy);
+    mxArray *Zpx_mxArray = mxCreateDoubleMatrix(NZ, 1, mxREAL);
+    mxArray *Zpy_mxArray = mxCreateDoubleMatrix(NZ, 1, mxREAL);
+    mxArray *Znx_mxArray = mxCreateDoubleMatrix(NZ, 1, mxREAL);
+    mxArray *Zny_mxArray = mxCreateDoubleMatrix(NZ, 1, mxREAL);
+    mxArray *Ypx_mxArray = mxCreateDoubleMatrix(NY, 1, mxREAL);
+    mxArray *Ypy_mxArray = mxCreateDoubleMatrix(NY, 1, mxREAL);
+    double *Zpx_buf = mxGetDoubles(Zpx_mxArray);
+    double *Zpy_buf = mxGetDoubles(Zpy_mxArray);
+    double *Znx_buf = mxGetDoubles(Znx_mxArray);
+    double *Zny_buf = mxGetDoubles(Zny_mxArray);
+    double *Ypx_buf = mxGetDoubles(Ypx_mxArray);
+    double *Ypy_buf = mxGetDoubles(Ypy_mxArray);
     for (size_t i = 0; i <= NZ; i++) {
         Zpx_buf[i] = Z.points[i][0];
         Zpy_buf[i] = Z.points[i][1];
@@ -58,33 +58,45 @@ void plotParametricNodes(int figid, const Nodes<2> &Z, const Nodes<2> &Y)
         Ypy_buf[i] = Y.points[i][1];
     }
     // Open the right figure
-    mxArray *prhs_figure[1] = {mxCreateDoubleScalar(double(figid))};
+    mxArray *figid_mxArray = mxCreateDoubleScalar(double(figid));
+    mxArray *prhs_figure[1] = {figid_mxArray};
     mexCallMATLAB(0, nullptr, 1, prhs_figure, "figure");
+    mxDestroyArray(figid_mxArray);
     // Plot Z.points
-    mxArray *prhs_Zplot[3] = {Zpx,Zpy,mxCreateString("ro")};
+    mxArray *ro_mxArray = mxCreateString("ro");
+    mxArray *prhs_Zplot[3] = {Zpx_mxArray,Zpy_mxArray,ro_mxArray};
     mexCallMATLAB(0, nullptr, 3, prhs_Zplot, "plot");
+    mxDestroyArray(ro_mxArray);
     // Call hold on
-    mxArray *prhs_holdon[1] = {mxCreateString("on")};
+    mxArray *on_mxArray = mxCreateString("on");
+    mxArray *prhs_holdon[1] = {on_mxArray};
     mexCallMATLAB(0, nullptr, 1, prhs_holdon, "hold");
+    mxDestroyArray(on_mxArray);
     // Plot Z.normals
-    mxArray *prhs_quiver[4] = {Zpx,Zpy,Znx,Zny};
+    mxArray *prhs_quiver[4] = {Zpx_mxArray,Zpy_mxArray,Znx_mxArray,Zny_mxArray};
     mexCallMATLAB(0, nullptr, 4, prhs_quiver, "quiver");
     // Plot Y.points
-    mxArray *prhs_Yplot[3] = {Ypx,Ypy,mxCreateString("k.")};
+    mxArray *kdot_mxArray = mxCreateString("k.");
+    mxArray *prhs_Yplot[3] = {Ypx_mxArray,Ypy_mxArray,kdot_mxArray};
     mexCallMATLAB(0, nullptr, 3, prhs_Yplot, "plot");
+    mxDestroyArray(kdot_mxArray);
     // Call hold off
-    mxArray *prhs_holdoff[1] = {mxCreateString("off")};
+    mxArray *off_mxArray = mxCreateString("off");
+    mxArray *prhs_holdoff[1] = {off_mxArray};
     mexCallMATLAB(0, nullptr, 1, prhs_holdoff, "hold");
+    mxDestroyArray(off_mxArray);
     // Call axis equal
-    mxArray *prhs_axis[1] = {mxCreateString("equal")};
+    mxArray *equal_mxArray = mxCreateString("equal");
+    mxArray *prhs_axis[1] = {equal_mxArray};
     mexCallMATLAB(0, nullptr, 1, prhs_axis, "axis");
+    mxDestroyArray(equal_mxArray);
     // Free up memory
-    mxDestroyArray(Zpx);
-    mxDestroyArray(Zpy);
-    mxDestroyArray(Znx);
-    mxDestroyArray(Zny);
-    mxDestroyArray(Ypx);
-    mxDestroyArray(Ypy);
+    mxDestroyArray(Zpx_mxArray);
+    mxDestroyArray(Zpy_mxArray);
+    mxDestroyArray(Znx_mxArray);
+    mxDestroyArray(Zny_mxArray);
+    mxDestroyArray(Ypx_mxArray);
+    mxDestroyArray(Ypy_mxArray);
 }
 
 template <int dim>
@@ -205,8 +217,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 {dFp1.Z(), dFp2.Z()}};
             return J;
         };
-        // Grow Z_i by iterating over all edges in this face
-        Nodes<2> Z_i;
+        // Grow GY by iterating over all edges in this face and update hmin
+        double hmin = std::min(U2-U1,V2-V1);
         TopExp_Explorer edges(face,TopAbs_EDGE);
         for (int j = 0; edges.More(); edges.Next(), j++)
         {
@@ -232,22 +244,75 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             auto dG = [dF,g,dg](const Point<1> &t) -> Point<3> {
                 return dF(g(t)) * dg(t);
             };
-            // Discretize the interval [t1,t2] according to spacing h
+            // Discretize the interval [t1,t2] according to h: R^3 -> R
             AABB<1> aabb_G(t1,t2);
             Nodes<1> t_ij;
-            t_ij.points.push_back(Point<1>(t1+1e-8*(t2-t1)));
-            t_ij.points.push_back(Point<1>(t2-1e-8*(t2-t1)));
             advancing_front<1,3>(aabb_G, Nodes<1>(), t_ij, G, dG, h, Nmax, rng);
             size_t Nt = t_ij.points.size();
             // Discretize the image of g in parametric domain
             for (size_t k = 0; k < Nt; k++) {
                 Point<1> t = t_ij.points[k];
-                double s = (edge.Orientation() == face.Orientation()) ? 1.0 : -1.0;
-                Z_i.points.push_back(g(t));
-                Z_i.normals.push_back(normal_from_jacobian<1,2>(dg(t)) * s);
+                Point<2> gt = g(t);
+                double s_edge = (edge.Orientation() == face.Orientation()) ? 1.0 : -1.0;
+                Point<2> nu_edge = normal_from_jacobian<1,2>(dg(t)) * s_edge;
+                double etol = BRep_Tool::Tolerance(edge);
+                Point<3> Fnew = F(gt - 10*etol*nu_edge);
+                auto dFnew = dF(gt - 10*etol*nu_edge);
+                GY.points.push_back(Fnew);
+                double s_face = face.Orientation() ? -1.0 : 1.0;
+                GY.normals.push_back(normal_from_jacobian(dFnew) * s_face);
+            }
+            // Find hmin as the minimum distance between consecutive points in parametric space
+            for (size_t k = 0; k < Nt-1; k++) {
+                double dist = (g(t_ij.points[k+1])-g(t_ij.points[k])).norm();
+                hmin = std::min(hmin,dist);
             }
         }
-        // Use Z_i to place points on the face
+        // Grow Z_i by iterating over all edges in this face
+        Nodes<2> Z_i;
+        edges.ReInit();
+        for (int j = 0; edges.More(); edges.Next(), j++)
+        {
+            // Fetch parametrization g: [t1,t2] -> R^2
+            const TopoDS_Edge &edge = TopoDS::Edge(edges.Current());
+            double t1, t2;
+            Handle(Geom2d_Curve) g_handle = BRep_Tool::CurveOnSurface(edge,face,t1,t2);
+            auto g = [g_handle](const Point<1> &t) -> Point<2> {
+                gp_Pnt2d gt;
+                g_handle->D0(t(0),gt);
+                return {gt.X(), gt.Y()};
+            };
+            auto dg = [g_handle](const Point<1> &t) -> Point<2> {
+                gp_Pnt2d gt;
+                gp_Vec2d dgt;
+                g_handle->D1(t(0),gt,dgt);
+                return {dgt.X(), dgt.Y()};
+            };
+            // Assemble parametrization G: [t1,t2] -> R^3 by composition
+            auto G = [F,g](const Point<1> &t) -> Point<3> {
+                return F(g(t));
+            };
+            auto dG = [dF,g,dg](const Point<1> &t) -> Point<3> {
+                return dF(g(t)) * dg(t);
+            };
+            // Assemble
+            auto h = [F,g](const Point<1> &t) -> Point<3> {
+                return F(g(t));
+            };
+            // Discretize the interval [t1,t2] according to spacing hmin
+            AABB<1> aabb_g(t1,t2);
+            Nodes<1> t_ij;
+            Nodes<2> gt = advancing_front<1,2>(aabb_g, Nodes<1>(), t_ij, g, dg,
+                                               [hmin](const Point<2>) -> double {return hmin;},
+                                               Nmax, rng);
+            size_t Ngt = gt.points.size();
+            for (size_t k = 0; k < Ngt; k++) {
+                Z_i.points.push_back(gt.points[k]);
+                double s = (edge.Orientation() == face.Orientation()) ? 1.0 : -1.0;
+                Z_i.normals.push_back(gt.normals[k] * s);
+            }
+        }
+        // Use the uniform boundary nodes Z_i to place points on the face
         Nodes<2> Y_i;
         Nodes<3> GY_i = advancing_front<2,3>(aabb_F, Z_i, Y_i, F, dF, h, Nmax, rng);
         // Append GY_i to GY skipping the first |Z_i| elements
