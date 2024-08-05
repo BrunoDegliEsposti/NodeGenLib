@@ -211,10 +211,11 @@ constexpr size_t Ncandidates[4] = {0, sizeof(candidates_buf_1D)/sizeof(double),
 template <int dim>
 bool inclusion_query_strict(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTree<dim> &kdtree)
 {
-    // Get indices of the dim nearest neighbors
-    size_t Knn_index[dim];
-    double Knn_dist2[dim];
-    size_t K = kdtree.knnSearch(y.data(), dim, Knn_index, Knn_dist2);
+    // Get indices of some nearest neighbors
+    constexpr size_t Klut[] = {0,1,2,4};
+    size_t Knn_index[Klut[dim]];
+    double Knn_dist2[Klut[dim]];
+    size_t K = kdtree.knnSearch(y.data(), Klut[dim], Knn_index, Knn_dist2);
     
     // Check if y is in the half-space dot(z_i-y,nz_i) > 0 for all K nearest-neighbors z_i
     for (size_t i = 0; i < K; i++) {
@@ -230,10 +231,11 @@ bool inclusion_query_strict(const Point<dim> &y, const Nodes<dim> &Z, const Stat
 template <int dim>
 bool inclusion_query(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTree<dim> &kdtree)
 {
-    // Get indices of the dim nearest neighbors
-    size_t Knn_index[dim];
-    double Knn_dist2[dim];
-    size_t K = kdtree.knnSearch(y.data(), dim, Knn_index, Knn_dist2);
+    // Get indices of some nearest neighbors
+    constexpr size_t Klut[] = {0,1,2,4};
+    size_t Knn_index[Klut[dim]];
+    double Knn_dist2[Klut[dim]];
+    size_t K = kdtree.knnSearch(y.data(), Klut[dim], Knn_index, Knn_dist2);
     
     // Check if y is inside or outside for all K nearest-neighbors z_i
     bool all_inside = true;
