@@ -11,7 +11,7 @@ include(FetchContent)
 FetchContent_Declare(
   nanoflann
   GIT_REPOSITORY https://github.com/jlblancoc/nanoflann.git
-  FIND_PACKAGE_ARGS NAMES nanoflann
+  GIT_TAG origin/master
 )
 FetchContent_MakeAvailable(nanoflann)
 
