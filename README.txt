@@ -1,16 +1,17 @@
-Installation instructions
+===== INSTALLATION INSTRUCTIONS =====
 - Install cmake
 - Install the library "OpenCASCADE" for working with CAD domains
 - Install the library "Eigen" for linear algebra, version 3.4 or newer
-- Install the library "nanoflann" for nearest-neighbor computations
+- (OPTIONAL) Install the library "nanoflann" for nearest-neighbor computations.
+If nanoflann is not installed, a new copy of the library will be downloaded
+and automatically used for the build.
 - Run "cmake ."
 - Run "make"
 - Add this folder to MATLAB's path
 
-TODO:
+===== TODO =====
 - Test isotropic candidates around y in R^d vs isotropic candidates
 around G(y) in the tangent plane spanned by the columns of dG(y)
-- Remove the auto keyword from the source code
 - Write a demo.cpp standalone program that discretizes a sphere
 and its interior, so that performance of our advancing front method
 can be analyzed with a CPU profiler

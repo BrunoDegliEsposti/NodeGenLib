@@ -219,8 +219,8 @@ bool inclusion_query_strict(const Point<dim> &y, const Nodes<dim> &Z, const Stat
     
     // Check if y is in the half-space dot(z_i-y,nz_i) > 0 for all K nearest-neighbors z_i
     for (size_t i = 0; i < K; i++) {
-        auto z = Z.points[Knn_index[i]];
-        auto nz = Z.normals[Knn_index[i]];
+        Point<dim> z = Z.points[Knn_index[i]];
+        Normal<dim> nz = Z.normals[Knn_index[i]];
         if (nz.dot(z - y) <= 0) {
             return false;
         }
@@ -241,8 +241,8 @@ bool inclusion_query(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTre
     bool all_inside = true;
     bool any_inside = false;
     for (size_t i = 0; i < K; i++) {
-        auto z = Z.points[Knn_index[i]];
-        auto nz = Z.normals[Knn_index[i]];
+        Point<dim> z = Z.points[Knn_index[i]];
+        Normal<dim> nz = Z.normals[Knn_index[i]];
         bool is_inside = (nz.dot(z - y) > 0);
         all_inside = all_inside && is_inside;
         any_inside = any_inside || is_inside;
@@ -257,10 +257,10 @@ bool inclusion_query(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTre
     // Edge case: y is inside wrt to some z_i, and outside wrt to some z_j.
     // Start by rejecting points too close to the boundary.
     for (size_t i = 0; i < K; i++) {
-        auto z_i = Z.points[Knn_index[i]];
+        Point<dim> z_i = Z.points[Knn_index[i]];
         double maxr2 = 0.0;
         for (size_t j = 0; j < K; j++) {
-            auto z_j = Z.points[Knn_index[j]];
+            Point<dim> z_j = Z.points[Knn_index[j]];
             maxr2 = std::max(maxr2,(z_j-z_i).squaredNorm());
         }
         if ((y-z_i).squaredNorm() <= maxr2) {
@@ -283,14 +283,14 @@ bool inclusion_query(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTre
 }
 
 template <int d, int n>
-Point<n> normal_from_jacobian(const Eigen::Matrix<double,n,d> &J)
+Normal<n> normal_from_jacobian(const Eigen::Matrix<double,n,d> &J)
 {
     static_assert(1 <= d && d == n-1 && n <= 3, "Invalid dimensions");
     if constexpr (d == 1 && n == 2) {
-        Eigen::Matrix<double,2,1> nu = {J(1), -J(0)};
+        Normal<n> nu = {J(1), -J(0)};
         return nu.normalized();
     } else if constexpr (d == 2 && n == 3) {
-        auto nu = J.col(0).cross(J.col(1));
+        Normal<n> nu = J.col(0).cross(J.col(1));
         return nu.normalized();
     }
 }
@@ -314,11 +314,11 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
     size_t NY = Y.points.size();
     Nodes<n> GY;
     for (size_t i = 0; i < NY; i++) {
-        auto y = Y.points[i];
-        auto Gy = G(y);
+        Point<d> y = Y.points[i];
+        Point<n> Gy = G(y);
         GY.points.push_back(Gy);
         if constexpr (d == n-1) {
-            auto nGy = normal_from_jacobian<d,n>(dG(y));
+            Normal<n> nGy = normal_from_jacobian<d,n>(dG(y));
             GY.normals.push_back(nGy);
         }
     }
@@ -350,9 +350,9 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
         // Iterate over candidate nodes around y
         for (size_t j = 0; j < Ncandidates[d]; j++) {
             // Generate new candidate x around y
-            auto dy = random_rotation * candidates.col(j);
+            Point<d> dy = random_rotation * candidates.col(j);
             double alpha = hGy / ((dGy*dy).norm()+1e-15);
-            auto x = y + alpha * dy;
+            Point<d> x = y + alpha * dy;
             
             // Test if x is inside the parametric domain
             if (!aabb.contains(x)) {
@@ -379,7 +379,7 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
             Y.points.push_back(x);
             GY.points.push_back(Gx);
             if constexpr (d == n-1) {
-                auto nGx = normal_from_jacobian<d,n>(dG(x));
+                Normal<n> nGx = normal_from_jacobian<d,n>(dG(x));
                 GY.normals.push_back(nGx);
             }
             kdtree_GY.addPoints(NY,NY);
