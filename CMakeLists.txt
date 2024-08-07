@@ -7,9 +7,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_compile_options(-Wall -Wextra -Wpedantic)
 
+include(FetchContent)
+FetchContent_Declare(
+  nanoflann
+  GIT_REPOSITORY https://github.com/jlblancoc/nanoflann.git
+  FIND_PACKAGE_ARGS NAMES nanoflann
+)
+FetchContent_MakeAvailable(nanoflann)
+
 find_package(Matlab REQUIRED)
 find_package(Eigen3 3.4 REQUIRED)
-find_package(nanoflann REQUIRED)
 find_package(OpenCASCADE REQUIRED)
 include_directories(SYSTEM ${OpenCASCADE_INCLUDE_DIR})
 link_directories(${OpenCASCADE_LIBRARY_DIR})
