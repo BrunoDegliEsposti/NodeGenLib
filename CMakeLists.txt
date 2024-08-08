@@ -12,6 +12,7 @@ FetchContent_Declare(
   nanoflann
   GIT_REPOSITORY https://github.com/jlblancoc/nanoflann.git
   GIT_TAG origin/master
+  FIND_PACKAGE_ARGS NAMES nanoflann
 )
 FetchContent_MakeAvailable(nanoflann)
 
