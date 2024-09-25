@@ -346,11 +346,14 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
         const double hGy = h(Gy);
         const Eigen::Matrix<double,n,d> dGy = dG(y);
         const Eigen::Matrix<double,d,d> random_rotation = get_random_rotation<d>(rng);
+        const Eigen::Matrix<double,d,d> AA = dGy.transpose() * dGy;
+        const Eigen::Matrix<double,d,d> Uinv = AA.llt().matrixU();
+        const Eigen::Matrix<double,d,d> U = Uinv.inverse();
         
         // Iterate over candidate nodes around y
         for (size_t j = 0; j < Ncandidates[d]; j++) {
             // Generate new candidate x around y
-            Point<d> dy = random_rotation * candidates.col(j);
+            Point<d> dy = U * random_rotation * candidates.col(j);
             double alpha = hGy / ((dGy*dy).norm()+1e-15);
             Point<d> x = y + alpha * dy;
             

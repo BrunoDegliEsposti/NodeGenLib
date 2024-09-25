@@ -1,7 +1,7 @@
 # https://cmake.org/cmake/help/latest/manual/cmake-commands.7.html
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
-project("Advancing front node generation for MATLAB" CXX)
+project("NodeGenLib" CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -29,8 +29,8 @@ matlab_add_mex(
 )
 
 matlab_add_mex(
-    NAME step_inspect
-    SRC src/step_inspect.cpp
+    NAME step_generate_boundary_nodes
+    SRC src/step_generate_boundary_nodes.cpp
     R2018a
 )
 
@@ -41,17 +41,24 @@ matlab_add_mex(
 )
 
 matlab_add_mex(
-    NAME step_advancing_front
-    SRC src/step_advancing_front.cpp
+    NAME step_print_contents
+    SRC src/step_print_contents.cpp
+    R2018a
+)
+
+matlab_add_mex(
+    NAME step_print_faces_info
+    SRC src/step_print_faces_info.cpp
     R2018a
 )
 
 target_link_libraries(advancing_front Eigen3::Eigen)
 target_link_libraries(advancing_front nanoflann::nanoflann)
-target_link_libraries(step_advancing_front Eigen3::Eigen)
-target_link_libraries(step_advancing_front nanoflann::nanoflann)
+target_link_libraries(step_generate_boundary_nodes Eigen3::Eigen)
+target_link_libraries(step_generate_boundary_nodes nanoflann::nanoflann)
 foreach(LIB ${OpenCASCADE_LIBRARIES})
-	target_link_libraries(step_inspect ${LIB})
+	target_link_libraries(step_generate_boundary_nodes ${LIB})
 	target_link_libraries(step_plot_pcurves ${LIB})
-	target_link_libraries(step_advancing_front ${LIB})
+	target_link_libraries(step_print_contents ${LIB})
+    target_link_libraries(step_print_faces_info ${LIB})
 endforeach()

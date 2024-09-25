@@ -13,6 +13,12 @@ https://dev.opencascade.org/doc/refman/html/_standard___type_def_8hxx.html
 Blog post about handles and const references:
 https://opencascade.blogspot.com/2009/08/const-handle-vs-handle.html
 
+Blog post about different ways to explore the topological structure of a shape
+https://medium.com/@dilshankmg/explore-your-shape-using-open-cascade-868a2a7cce65
+
+Utility library on top of Open CASCADE:
+https://github.com/ulikoehler/OCCUtils
+
 Toolkit TKMath
 	- Precision, provides Precision::Confusion()
 	- gp, provides low-level geometrical primitives
@@ -23,18 +29,25 @@ Toolkit TKBRep
 	BRep_Tool::Pnt, BRep_Tool::Curve, BRep_Tool::Surface, BRep_Tool::CurveOnSurface,
 	BRep_Tool::SameRange, BRep_Tool::SameParameter,
 	BRep_Tool::IsClosed, BRep_Tool::Degenerated
-	- TopExp: provides TopExp_Explorer, TopExp::MapShapesAndAncestors
+	- TopExp: provides TopExp_Explorer, TopExp::MapShapes, TopExp::MapShapesAndAncestors
 	- TopoDS: provides TopoDS_Shape, TopoDS_TShape, TopoDS_Iterator
 	https://dev.opencascade.org/doc/refman/html/class_topo_d_s___shape.html
 	https://dev.opencascade.org/doc/refman/html/class_topo_d_s___t_shape.html
 
+Toolkit TKG2d
+	- Geom2dAdaptor: provides Geom2dAdaptor_Curve
+
 Toolkit TKG3d
 	- Geom: provides Geom_Curve, Geom_Surface
 	- TopAbs: provides TopAbs_Orientation, TopAbs_ShapeEnum, TopAbs_State
+
+Toolkit TKGeomBase
+	- GCPnts: provides GCPnts_AbscissaPoint, GCPnts_AbscissaPoint::Length
 
 Toolkit TKTopAlgo
 	- BRepBuilderAPI: provides BRepBuilderAPI_NurbsConvert, BRepBuilderAPI_MakeVertex,
 	BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeFace
 	- BRepClass: provides BRepClass_FaceClassifier, BRepClass_FaceExplorer
 	- BRepClass3d: provides BRepClass3d_SolidClassifier, BRepClass3d_SolidExplorer
-
+	- BRepGProp: provides BRepGProp::LinearProperties, BRepGProp::SurfaceProperties,
+	BRepGProp::volumeProperties

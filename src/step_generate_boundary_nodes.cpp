@@ -22,15 +22,18 @@
 #include <BRepTools.hxx>
 #include <BRep_Tool.hxx>
 #include <Geom2d_Curve.hxx>
+#include <Geom2dAdaptor_Curve.hxx>
+#include <GCPnts_AbscissaPoint.hxx>
 #include <gp_Pnt2d.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Shape.hxx>
+#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 
-void plotParametricNodes(int figid, const Nodes<2> &Z, const Nodes<2> &Y)
+void plotParametricNodes(const Nodes<2> &Z, const Nodes<2> &Y)
 {
     // Sample pcurve and its normals
     size_t NZ = Z.points.size();
@@ -57,11 +60,6 @@ void plotParametricNodes(int figid, const Nodes<2> &Z, const Nodes<2> &Y)
         Ypx_buf[i] = Y.points[i][0];
         Ypy_buf[i] = Y.points[i][1];
     }
-    // Open the right figure
-    mxArray *figid_mxArray = mxCreateDoubleScalar(double(figid));
-    mxArray *prhs_figure[1] = {figid_mxArray};
-    mexCallMATLAB(0, nullptr, 1, prhs_figure, "figure");
-    mxDestroyArray(figid_mxArray);
     // Plot Z.points
     mxArray *ro_mxArray = mxCreateString("ro");
     mxArray *prhs_Zplot[3] = {Zpx_mxArray,Zpy_mxArray,ro_mxArray};
@@ -111,32 +109,39 @@ mxArray* mxArray_from_point(const Point<dim> &p)
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-// function [points,normals] = step_advancing_front(filename,h,Nmax,seed,debug)
+// function [points,normals] = step_generate_boundary_nodes(filename,iSolid,h,Nmax,seed,iFaceDebug)
 {
     // Rename input and output arguments
-    if (nrhs != 5) {
-        mexErrMsgIdAndTxt("StepAdvancingFront:Input","Wrong number of input arguments");
+    if (nrhs != 6) {
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","Wrong number of input arguments");
     }
     if (nlhs != 2) {
-        mexErrMsgIdAndTxt("StepAdvancingFront:Input","Wrong number of output arguments");
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","Wrong number of output arguments");
     }
     const mxArray *filename_mxArray = prhs[0];
-    const mxArray *h_mxArray = prhs[1];
-    const mxArray *Nmax_mxArray = prhs[2];
-    const mxArray *seed_mxArray = prhs[3];
-    const mxArray *debug_mxArray = prhs[4];
+    const mxArray *iSolid_mxArray = prhs[1];
+    const mxArray *h_mxArray = prhs[2];
+    const mxArray *Nmax_mxArray = prhs[3];
+    const mxArray *seed_mxArray = prhs[4];
+    const mxArray *iFaceDebug_mxArray = prhs[5];
     mxArray *points_mxArray = nullptr;
     mxArray *normals_mxArray = nullptr;
     
     // Unwrap filename
     Standard_CString filename = mxArrayToString(filename_mxArray);
     if (filename == nullptr) {
-        mexErrMsgIdAndTxt("StepAdvancingFront:Input","Filename must be a char array");
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","Filename must be a char array");
     }
+    
+    // Unwrap iSolid
+    if (!mxIsScalar(iSolid_mxArray) || !mxIsNumeric(iSolid_mxArray)) {
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","iSolid must be a scalar of numeric type");
+    }
+    int iSolid = (int)mxGetScalar(iSolid_mxArray);
     
     // Unwrap h
     if (mxGetClassID(h_mxArray) != mxFUNCTION_CLASS) {
-        mexErrMsgIdAndTxt("StepAdvancingFront:Input","h is not a function handle");
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","h is not a function handle");
     }
     auto h = [h_mxArray](const Point<3> &x) -> double {
         mxArray *plhs_feval[1];
@@ -145,11 +150,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         prhs_feval[1] = mxArray_from_point<3>(x);
         int errcode = mexCallMATLAB(1, plhs_feval, 2, prhs_feval, "feval");
         if (errcode) {
-            mexErrMsgIdAndTxt("StepAdvancingFront:Feval",
+            mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Feval",
                               "Evaluation of h produced errors");
         }
         if (!mxIsDouble(plhs_feval[0]) || mxGetNumberOfElements(plhs_feval[0]) != 1) {
-            mexErrMsgIdAndTxt("StepAdvancingFront:Feval",
+            mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Feval",
                               "Output of h must be a scalar");
         }
         double hx = mxGetScalar(plhs_feval[0]);
@@ -160,38 +165,48 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     // Unwrap Nmax
     if (!mxIsScalar(Nmax_mxArray) || !mxIsNumeric(Nmax_mxArray)) {
-        mexErrMsgIdAndTxt("StepAdvancingFront:Input","Nmax must be a scalar of numeric type");
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","Nmax must be a scalar of numeric type");
     }
     size_t Nmax = (size_t)mxGetScalar(Nmax_mxArray);
 
     // Unwrap seed
     if (!mxIsScalar(seed_mxArray) || !mxIsNumeric(seed_mxArray)) {
-        mexErrMsgIdAndTxt("StepAdvancingFront:Input","seed must be a scalar of numeric type");
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","seed must be a scalar of numeric type");
     }
     uint64_t seed = (uint64_t)mxGetScalar(seed_mxArray);
     std::mt19937_64 rng(seed);
     
-    // Unwrap debug
-    if (!mxIsScalar(debug_mxArray) || !mxIsLogical(debug_mxArray)) {
-        mexErrMsgIdAndTxt("StepAdvancingFront:Input","debug must be a scalar of logical type");
+    // Unwrap iFaceDebug
+    if (!mxIsScalar(iFaceDebug_mxArray) || !mxIsNumeric(iFaceDebug_mxArray)) {
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","iFaceDebug must be a scalar of numeric type");
     }
-    bool debug = mxIsLogicalScalarTrue(debug_mxArray);
+    int iFaceDebug = (int)mxGetScalar(iFaceDebug_mxArray);
 
     // Read input file
     STEPControl_Reader reader;
     IFSelect_ReturnStatus read_status = reader.ReadFile(filename);
     if (read_status != IFSelect_RetDone) {
-        mexErrMsgIdAndTxt("StepAdvancingFront:Input","Error reading STEP file");
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","Error reading STEP file");
     }
     Standard_Integer nShapes = reader.TransferRoots();
     if (nShapes == 0) {
-        mexErrMsgIdAndTxt("StepAdvancingFront:Input","Error loading STEP file");
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","Error loading STEP file");
     }
     TopoDS_Shape shape = reader.OneShape();
+    
+    // Focus on the solid with index iSolid in the loaded shape.
+    // Indices in TopTools_IndexedMapOfShape start from 1, not from 0
+    TopTools_IndexedMapOfShape solids_map;
+    TopExp::MapShapes(shape, TopAbs_SOLID, solids_map);
+    Standard_Integer nSolids = solids_map.Extent();
+    if (iSolid < 1 || iSolid > nSolids) {
+        mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","Solid index out of range [1,%d]",nSolids);
+    }
 
-    // Grow GY by iterating over all faces in the shape
+    // Variable GY stores the generated boundary nodes on the solid.
+    // Grow GY by iterating over all faces in the solid
     Nodes<3> GY;
-    TopExp_Explorer faces(shape,TopAbs_FACE);
+    TopExp_Explorer faces(solids_map(iSolid),TopAbs_FACE);
     for (int i = 0; faces.More(); faces.Next(), i++)
     {
         // Fetch parametrization F and bounding box of parametric domain
@@ -219,6 +234,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         };
         // Grow GY by iterating over all edges in this face and update hmin
         double hmin = std::min(U2-U1,V2-V1);
+        double Lmin = std::min(U2-U1,V2-V1);
         TopExp_Explorer edges(face,TopAbs_EDGE);
         for (int j = 0; edges.More(); edges.Next(), j++)
         {
@@ -226,6 +242,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             const TopoDS_Edge &edge = TopoDS::Edge(edges.Current());
             double t1, t2;
             Handle(Geom2d_Curve) g_handle = BRep_Tool::CurveOnSurface(edge,face,t1,t2);
+            Geom2dAdaptor_Curve g_adaptor(g_handle,t1,t2);
             auto g = [g_handle](const Point<1> &t) -> Point<2> {
                 gp_Pnt2d gt;
                 g_handle->D0(t(0),gt);
@@ -267,6 +284,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 double dist = (g(t_ij.points[k+1])-g(t_ij.points[k])).norm();
                 hmin = std::min(hmin,dist);
             }
+            // Store in Lmin the length of the shortest edge
+            Lmin = std::min(Lmin,GCPnts_AbscissaPoint::Length(g_adaptor));
         }
         // Grow Z_i by iterating over all edges in this face
         Nodes<2> Z_i;
@@ -277,6 +296,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             const TopoDS_Edge &edge = TopoDS::Edge(edges.Current());
             double t1, t2;
             Handle(Geom2d_Curve) g_handle = BRep_Tool::CurveOnSurface(edge,face,t1,t2);
+            Geom2dAdaptor_Curve g_adaptor(g_handle,t1,t2);
             auto g = [g_handle](const Point<1> &t) -> Point<2> {
                 gp_Pnt2d gt;
                 g_handle->D0(t(0),gt);
@@ -288,20 +308,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 g_handle->D1(t(0),gt,dgt);
                 return {dgt.X(), dgt.Y()};
             };
-            // Assemble parametrization G: [t1,t2] -> R^3 by composition
-            auto G = [F,g](const Point<1> &t) -> Point<3> {
-                return F(g(t));
-            };
-            auto dG = [dF,g,dg](const Point<1> &t) -> Point<3> {
-                return dF(g(t)) * dg(t);
-            };
-            // Assemble
-            auto h = [F,g](const Point<1> &t) -> Point<3> {
-                return F(g(t));
-            };
-            // Discretize the interval [t1,t2] according to spacing hmin
+            // Discretize the interval [t1,t2] according to constant spacing hmin
             AABB<1> aabb_g(t1,t2);
             Nodes<1> t_ij;
+            double g_length = GCPnts_AbscissaPoint::Length(g_adaptor);
+            double offset = std::min(0.1*Lmin,0.5*hmin);
+            GCPnts_AbscissaPoint tL(g_adaptor,offset,t1);
+            GCPnts_AbscissaPoint tR(g_adaptor,g_length-offset,t1);
+            t_ij.points.push_back(Point<1>(tL.Parameter()));
+            t_ij.points.push_back(Point<1>(tR.Parameter()));
             Nodes<2> gt = advancing_front<1,2>(aabb_g, Nodes<1>(), t_ij, g, dg,
                                                [hmin](const Point<2>) -> double {return hmin;},
                                                Nmax, rng);
@@ -322,8 +337,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             GY.normals.push_back(GY_i.normals[k] * s);
         }
         // Plot parametric nodes if debug is enabled
-        if (debug) {
-            plotParametricNodes(i+1,Z_i,Y_i);
+        if (i+1 == iFaceDebug) {
+            plotParametricNodes(Z_i,Y_i);
         }
     }
     

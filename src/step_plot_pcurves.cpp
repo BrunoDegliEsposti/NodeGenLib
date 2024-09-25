@@ -21,101 +21,115 @@
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Shape.hxx>
+#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 
-void plotEdgeOnFace(int figid, const TopoDS_Face &face, int edgeid, const TopoDS_Edge &edge)
+void plotEdgeOnFace(const TopoDS_Face &face, int iEdge, const TopoDS_Edge &edge)
 {
     // Extract pcurve
     Standard_Real t0,t1;
     Handle(Geom2d_Curve) pcurve = BRep_Tool::CurveOnSurface(edge,face,t0,t1);
     if (pcurve.IsNull()) {
-        mexErrMsgIdAndTxt("STEP:nullptr","Handle to pcurve is NULL");
+        mexErrMsgIdAndTxt("StepPlotPcurves:nullptr","Handle to pcurve is NULL");
     }
     // Sample pcurve and its normals
     mxArray *px = mxCreateDoubleMatrix(101, 1, mxREAL);
     mxArray *py = mxCreateDoubleMatrix(101, 1, mxREAL);
-    mxArray *nx = mxCreateDoubleMatrix(101, 1, mxREAL);
-    mxArray *ny = mxCreateDoubleMatrix(101, 1, mxREAL);
+    mxArray *qx = mxCreateDoubleMatrix( 11, 1, mxREAL);
+    mxArray *qy = mxCreateDoubleMatrix( 11, 1, mxREAL);
+    mxArray *nx = mxCreateDoubleMatrix( 11, 1, mxREAL);
+    mxArray *ny = mxCreateDoubleMatrix( 11, 1, mxREAL);
     double *px_buf = mxGetDoubles(px);
     double *py_buf = mxGetDoubles(py);
+    double *qx_buf = mxGetDoubles(qx);
+    double *qy_buf = mxGetDoubles(qy);
     double *nx_buf = mxGetDoubles(nx);
     double *ny_buf = mxGetDoubles(ny);
     for (int i = 0; i <= 100; i++) {
         Standard_Real t = t0 + i*(t1-t0)/100.0;
-        gp_Pnt2d p;
-        gp_Vec2d v;
-        pcurve->D1(t,p,v);
+        gp_Pnt2d p = pcurve->Value(t);
         px_buf[i] = p.X();
         py_buf[i] = p.Y();
+    }
+    for (int i = 0; i <= 10; i++) {
+        Standard_Real t = t0 + i*(t1-t0)/10.0;
+        gp_Pnt2d q;
+        gp_Vec2d v;
+        pcurve->D1(t,q,v);
+        qx_buf[i] = q.X();
+        qy_buf[i] = q.Y();
         Standard_Real vNorm = v.Magnitude();
         Standard_Real s = (edge.Orientation() == face.Orientation()) ? 1.0 : -1.0;
-        nx_buf[i] =  (i/100.0)*s*v.Y()/vNorm;
-        ny_buf[i] = -(i/100.0)*s*v.X()/vNorm;
+        nx_buf[i] =  s*v.Y()/vNorm;
+        ny_buf[i] = -s*v.X()/vNorm;
     }
-    // Open the right figure
-    mxArray *plhs_figure[0];
-    mxArray *prhs_figure[1] = {mxCreateDoubleScalar(double(figid))};
-    mexCallMATLAB(0, plhs_figure, 1, prhs_figure, "figure");
     // Plot pcurve points
-    const char* colors[7] = {"r", "g", "b", "c", "m", "y", "k"};
-    mxArray *plhs_plot[0];
-    mxArray *prhs_plot[3] = {px,py,mxCreateString(colors[(edgeid-1)%7])};
-    mexCallMATLAB(0, plhs_plot, 3, prhs_plot, "plot");
+    const char* colors[2] = {"r", "b"};
+    mxArray *color_mxArray = mxCreateString(colors[iEdge%2]);
+    mxArray *prhs_plot[3] = {px,py,color_mxArray};
+    mexCallMATLAB(0, nullptr, 3, prhs_plot, "plot");
     // Call hold on
-    mxArray *plhs_hold[0];
     mxArray *prhs_hold[1] = {mxCreateString("on")};
-    mexCallMATLAB(0, plhs_hold, 1, prhs_hold, "hold");
+    mexCallMATLAB(0, nullptr, 1, prhs_hold, "hold");
     // Plot pcurve normals
-    mxArray *plhs_quiver[0];
-    mxArray *prhs_quiver[4] = {px,py,nx,ny};
-    mexCallMATLAB(0, plhs_quiver, 4, prhs_quiver, "quiver");
+    mxArray *prhs_quiver[5] = {qx,qy,nx,ny,color_mxArray};
+    mexCallMATLAB(0, nullptr, 5, prhs_quiver, "quiver");
+    // Free all the allocated memory
+    mxDestroyArray(color_mxArray);
+    mxDestroyArray(px);
+    mxDestroyArray(py);
+    mxDestroyArray(qx);
+    mxDestroyArray(qy);
+    mxDestroyArray(nx);
+    mxDestroyArray(ny);
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+// function [] = step_plot_pcurves(filename,iFace)
 {
-    // Process arguments
-    if (nrhs != 1) {
-        mexErrMsgIdAndTxt("STEP:inputargs","Function takes in only one argument");
+    // Rename input arguments
+    if (nrhs != 2) {
+        mexErrMsgIdAndTxt("StepPlotPcurves:Input","Function takes in two arguments");
     }
-    Standard_CString filename = mxArrayToString(prhs[0]);
+    const mxArray *filename_mxArray = prhs[0];
+    const mxArray *iFace_mxArray = prhs[1];
+    
+    // Unwrap filename
+    Standard_CString filename = mxArrayToString(filename_mxArray);
     if (filename == nullptr) {
-        mexErrMsgIdAndTxt("STEP:inputargs","Cannot convert filename to string");
+        mexErrMsgIdAndTxt("StepPlotPcurves:Input","Filename must be a char array");
     }
+    
+    // Unwrap iFace
+    if (!mxIsScalar(iFace_mxArray) || !mxIsNumeric(iFace_mxArray)) {
+        mexErrMsgIdAndTxt("StepPlotPcurves:Input","Face index must be a scalar of numeric type");
+    }
+    Standard_Integer iFace = (Standard_Integer)mxGetScalar(iFace_mxArray);
 
     // Read input file
     STEPControl_Reader reader;
     IFSelect_ReturnStatus read_status = reader.ReadFile(filename);
     if (read_status != IFSelect_RetDone) {
-        mexErrMsgIdAndTxt("STEP:inputfile","Error reading STEP file");
+        mexErrMsgIdAndTxt("StepPlotPcurves:Input","Error reading STEP file");
     }
     Standard_Integer nShapes = reader.TransferRoots();
     if (nShapes == 0) {
-        mexErrMsgIdAndTxt("STEP:inputfile","Error loading STEP file");
+        mexErrMsgIdAndTxt("StepPlotPcurves:Input","Error loading STEP file");
     }
     TopoDS_Shape shape = reader.OneShape();
-
-    const char *orientation_names[4] = {
-        "TopAbs_FORWARD", "TopAbs_REVERSED", "TopAbs_INTERNAL", "TopAbs_EXTERNAL"
-    };
-
-    // Explore shape
-    TopExp_Explorer faces(shape,TopAbs_FACE);
-    for (int i = 0; faces.More(); faces.Next(), i++) {
-        const TopoDS_Face &face = TopoDS::Face(faces.Current());
-        mexPrintf("Face %d found\n",i+1);
-        mexPrintf("Face has orientation %s\n",orientation_names[face.Orientation()]);
-        TopExp_Explorer wires(face,TopAbs_WIRE);
-        for (int j = 0; wires.More(); wires.Next(), j++) {
-            const TopoDS_Wire &wire = TopoDS::Wire(wires.Current());
-            mexPrintf("  Wire %d found on face %d\n",j+1,i+1);
-            mexPrintf("  Wire has orientation %s\n",orientation_names[wire.Orientation()]);
-            TopExp_Explorer edges(wire,TopAbs_EDGE);
-            for (int k = 0; edges.More(); edges.Next(), k++) {
-                const TopoDS_Edge &edge = TopoDS::Edge(edges.Current());
-                mexPrintf("    Edge %d found on wire %d on face %d\n",k+1,j+1,i+1);
-                mexPrintf("    Edge has orientation %s\n",orientation_names[edge.Orientation()]);
-                plotEdgeOnFace(i+1, face, k+1, edge);
-            }
-        }
+    
+    // Make a list of all faces, with no duplicates.
+    // Indices of TopTools_IndexedMapOfShape start from 1, not from 0.
+    TopTools_IndexedMapOfShape faces_map;
+    TopExp::MapShapes(shape, TopAbs_FACE, faces_map);
+    Standard_Integer nFaces = faces_map.Extent();
+    if (iFace < 1 || iFace > nFaces) {
+        mexErrMsgIdAndTxt("StepPlotPcurves:Input","Face index out of range [1,%d]",nFaces);
+    }
+    const TopoDS_Face &face = TopoDS::Face(faces_map(iFace));
+    TopExp_Explorer edges(face,TopAbs_EDGE);
+    for (int iEdges = 0; edges.More(); edges.Next(), iEdges++) {
+        const TopoDS_Edge &edge = TopoDS::Edge(edges.Current());
+        plotEdgeOnFace(face, iEdges, edge);
     }
 }
