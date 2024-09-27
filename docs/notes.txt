@@ -29,6 +29,7 @@ Toolkit TKBRep
 	BRep_Tool::Pnt, BRep_Tool::Curve, BRep_Tool::Surface, BRep_Tool::CurveOnSurface,
 	BRep_Tool::SameRange, BRep_Tool::SameParameter,
 	BRep_Tool::IsClosed, BRep_Tool::Degenerated
+	- BRepTools: provides BRepTools::UVBounds
 	- TopExp: provides TopExp_Explorer, TopExp::MapShapes, TopExp::MapShapesAndAncestors
 	- TopoDS: provides TopoDS_Shape, TopoDS_TShape, TopoDS_Iterator
 	https://dev.opencascade.org/doc/refman/html/class_topo_d_s___shape.html

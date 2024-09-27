@@ -213,7 +213,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         const TopoDS_Face &face = TopoDS::Face(faces.Current());
         Handle(Geom_Surface) F_handle = BRep_Tool::Surface(face);
         double U1, U2, V1, V2;
-        F_handle->Bounds(U1,U2,V1,V2);
+        BRepTools::UVBounds(face,U1,U2,V1,V2);
         Point<2> blc = {U1,V1};
         Point<2> trc = {U2,V2};
         AABB<2> aabb_F(blc,trc);
