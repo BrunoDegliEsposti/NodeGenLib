@@ -211,7 +211,7 @@ constexpr size_t Ncandidates[4] = {0, sizeof(candidates_buf_1D)/sizeof(double),
 template <int dim>
 bool inclusion_query_strict(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTree<dim> &kdtree)
 {
-    // Get indices of some nearest neighbors
+    // Get indices of a sufficient number of nearest neighbors
     constexpr size_t Klut[] = {0,1,2,4};
     size_t Knn_index[Klut[dim]];
     double Knn_dist2[Klut[dim]];
@@ -231,7 +231,7 @@ bool inclusion_query_strict(const Point<dim> &y, const Nodes<dim> &Z, const Stat
 template <int dim>
 bool inclusion_query(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTree<dim> &kdtree)
 {
-    // Get indices of some nearest neighbors
+    // Get indices of a sufficient number of nearest neighbors
     constexpr size_t Klut[] = {0,1,2,4};
     size_t Knn_index[Klut[dim]];
     double Knn_dist2[Klut[dim]];
@@ -255,7 +255,7 @@ bool inclusion_query(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTre
     }
     
     // Edge case: y is inside wrt to some z_i, and outside wrt to some z_j.
-    // Start by rejecting points too close to the boundary.
+    // Start by rejecting points too close to the boundary, for which nothing meaningful can be done.
     for (size_t i = 0; i < K; i++) {
         Point<dim> z_i = Z.points[Knn_index[i]];
         double maxr2 = 0.0;
@@ -346,44 +346,45 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
         const double hGy = h(Gy);
         const Eigen::Matrix<double,n,d> dGy = dG(y);
         const Eigen::Matrix<double,d,d> random_rotation = get_random_rotation<d>(rng);
+        // Multiplying candidates by M ensures that points G(yhat) are uniformly spaced around G(y)
         const Eigen::Matrix<double,d,d> AA = dGy.transpose() * dGy;
-        const Eigen::Matrix<double,d,d> Uinv = AA.llt().matrixU();
-        const Eigen::Matrix<double,d,d> U = Uinv.inverse();
+        const Eigen::Matrix<double,d,d> L = AA.llt().matrixL();
+        const Eigen::Matrix<double,d,d> M = L.transpose().inverse();
         
         // Iterate over candidate nodes around y
-        for (size_t j = 0; j < Ncandidates[d]; j++) {
-            // Generate new candidate x around y
-            Point<d> dy = U * random_rotation * candidates.col(j);
+        for (size_t j = 0; j < Ncandidates[d] && NY < Nmax; j++) {
+            // Generate new candidate yhat around y
+            Point<d> dy = M * random_rotation * candidates.col(j);
             double alpha = hGy / ((dGy*dy).norm()+1e-15);
-            Point<d> x = y + alpha * dy;
+            Point<d> yhat = y + alpha * dy;
             
-            // Test if x is inside the parametric domain
-            if (!aabb.contains(x)) {
+            // Test if yhat is inside the parametric domain
+            if (!aabb.contains(yhat)) {
                 continue;
             }
-            if (!Z.points.empty() && !inclusion_query<d>(x,Z,kdtree_Z)) {
+            if (!Z.points.empty() && !inclusion_query<d>(yhat,Z,kdtree_Z)) {
                 continue;
             }
             
-            // Test if G(x) is too close to an already existing node
-            Point<n> Gx = G(x);
-            double distance2_Gx_Gy = (Gx-Gy).squaredNorm();
+            // Test if G(yhat) is too close to an already existing node
+            Point<n> Gyhat = G(yhat);
+            double distance2_Gyhat_Gy = (Gyhat-Gy).squaredNorm();
             nanoflann::KNNResultSet<double> result_set(1);
             size_t nn_index;
-            double distance2_Gx_nn;
-            result_set.init(&nn_index,&distance2_Gx_nn);
-            bool knn_found = kdtree_GY.findNeighbors(result_set, Gx.data());
+            double distance2_Gyhat_nn;
+            result_set.init(&nn_index,&distance2_Gyhat_nn);
+            bool knn_found = kdtree_GY.findNeighbors(result_set, Gyhat.data());
             double reltol = 1-1e-10;
-            if (knn_found && distance2_Gx_nn < distance2_Gx_Gy * reltol) {
+            if (knn_found && distance2_Gyhat_nn < distance2_Gyhat_Gy * reltol) {
                 continue;
             }
             
-            // All tests passed, we can add x to Y and G(x) to GY
-            Y.points.push_back(x);
-            GY.points.push_back(Gx);
+            // All tests passed, we can add yhat to Y and G(yhat) to GY
+            Y.points.push_back(yhat);
+            GY.points.push_back(Gyhat);
             if constexpr (d == n-1) {
-                Normal<n> nGx = normal_from_jacobian<d,n>(dG(x));
-                GY.normals.push_back(nGx);
+                Normal<n> nGyhat = normal_from_jacobian<d,n>(dG(yhat));
+                GY.normals.push_back(nGyhat);
             }
             kdtree_GY.addPoints(NY,NY);
             NY++;
