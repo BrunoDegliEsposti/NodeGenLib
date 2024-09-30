@@ -271,8 +271,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 double s_edge = (edge.Orientation() == face.Orientation()) ? 1.0 : -1.0;
                 Point<2> nu_edge = normal_from_jacobian<1,2>(dg(t)) * s_edge;
                 double etol = BRep_Tool::Tolerance(edge);
-                Point<3> Fnew = F(gt - 10*etol*nu_edge);
-                Eigen::Matrix<double,3,2> dFnew = dF(gt - 10*etol*nu_edge);
+                double alpha = 2.5 * etol / ((dF(gt)*nu_edge).norm() + 1e-15);
+                Point<3> Fnew = F(gt - alpha*nu_edge);
+                Eigen::Matrix<double,3,2> dFnew = dF(gt - alpha*nu_edge);
                 GY.points.push_back(Fnew);
                 double s_face = face.Orientation() ? -1.0 : 1.0;
                 GY.normals.push_back(normal_from_jacobian(dFnew) * s_face);
