@@ -23,7 +23,6 @@
 #include <BRep_Tool.hxx>
 #include <Geom2d_Curve.hxx>
 #include <Geom2dAdaptor_Curve.hxx>
-#include <GCPnts_AbscissaPoint.hxx>
 #include <gp_Pnt2d.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Face.hxx>
@@ -233,8 +232,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             return J;
         };
         // Grow GY by iterating over all edges in this face and update hmin
-        double hmin = std::min(U2-U1,V2-V1);
-        double Lmin = std::min(U2-U1,V2-V1);
+        double hmin = std::numeric_limits<double>::infinity();
         TopExp_Explorer edges(face,TopAbs_EDGE);
         for (int j = 0; edges.More(); edges.Next(), j++)
         {
@@ -279,13 +277,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 double s_face = face.Orientation() ? -1.0 : 1.0;
                 GY.normals.push_back(normal_from_jacobian(dFnew) * s_face);
             }
-            // Find hmin as the minimum distance between consecutive points in parametric space
+            // Find hmin as the minimum distance between consecutive points in parameter space
             for (size_t k = 0; k < Nt-1; k++) {
                 double dist = (g(t_ij.points[k+1])-g(t_ij.points[k])).norm();
                 hmin = std::min(hmin,dist);
             }
-            // Store in Lmin the length of the shortest edge
-            Lmin = std::min(Lmin,GCPnts_AbscissaPoint::Length(g_adaptor));
+        }
+        // If hmin has not been updated, skip further processing because the face is negligible
+        if (hmin == std::numeric_limits<double>::infinity()) {
+            continue;
         }
         // Grow Z_i by iterating over all edges in this face
         Nodes<2> Z_i;
@@ -308,18 +308,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 g_handle->D1(t(0),gt,dgt);
                 return {dgt.X(), dgt.Y()};
             };
-            // Discretize the interval [t1,t2] according to constant spacing hmin
+            // Discretize the interval [t1,t2] according to constant spacing hmin.
+            // If the edge is too short, skip the discretization process
             AABB<1> aabb_g(t1,t2);
             Nodes<1> t_ij;
-            double g_length = GCPnts_AbscissaPoint::Length(g_adaptor);
-            double offset = std::min(0.1*Lmin,0.5*hmin);
-            GCPnts_AbscissaPoint tL(g_adaptor,offset,t1);
-            GCPnts_AbscissaPoint tR(g_adaptor,g_length-offset,t1);
-            t_ij.points.push_back(Point<1>(tL.Parameter()));
-            t_ij.points.push_back(Point<1>(tR.Parameter()));
+            Point<1> tL(t1 + hmin/(2*dg(Point<1>(t1)).norm()+1e-15));
+            Point<1> tR(t2 - hmin/(2*dg(Point<1>(t2)).norm()+1e-15));
+            if (tL(0) >= tR(0)) {
+                continue;
+            }
+            t_ij.points.push_back(tL);
+            t_ij.points.push_back(tR);
             Nodes<2> gt = advancing_front<1,2>(aabb_g, Nodes<1>(), t_ij, g, dg,
                                                [hmin](const Point<2>) -> double {return hmin;},
-                                               Nmax, rng);
+                                               10*Nmax, rng);
             size_t Ngt = gt.points.size();
             for (size_t k = 0; k < Ngt; k++) {
                 Z_i.points.push_back(gt.points[k]);
