@@ -298,6 +298,20 @@ Normal<n> normal_from_jacobian(const Eigen::Matrix<double,n,d> &J)
 template <int d, int n, typename G_t, typename dG_t, typename h_t>
 Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
     G_t G, dG_t dG, h_t h, size_t Nmax, std::mt19937_64 rng)
+/* Input:
+ *   Dimension d of parameter space
+ *   Dimension n >= d of model space
+ *   Bounds of parameter space, represented as an axis-aligned box H in R^d
+ *   Vector of boundary nodes Z with normals, can be empty
+ *   Vector of starting nodes Y, can be empty
+ *   Parametrization G: H -> R^n and its Jacobian dG: H -> R^{n,d}
+ *   Node spacing function h: R^n -> R+
+ *   Upper bound Nmax to the size of the output GY
+ *   Random number generator state rng
+ * Output:
+ *   Vector of nodes Y placed in parameter space (input is changed)
+ *   Vector of nodes GY placed in model space
+ */
 {
     static_assert(1 <= d && d <= n && n <= 3, "Invalid dimensions");
     
@@ -310,10 +324,10 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
         }
     }
 
-    // Initialize the set GY as G(Y)
+    // Initialize the set GY as G(Y). Make sure that GY.points.size() <= Nmax
     size_t NY = Y.points.size();
     Nodes<n> GY;
-    for (size_t i = 0; i < NY; i++) {
+    for (size_t i = 0; i < NY && i < Nmax; i++) {
         Point<d> y = Y.points[i];
         Point<n> Gy = G(y);
         GY.points.push_back(Gy);
@@ -374,8 +388,8 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
             double distance2_Gyhat_nn;
             result_set.init(&nn_index,&distance2_Gyhat_nn);
             bool knn_found = kdtree_GY.findNeighbors(result_set, Gyhat.data());
-            double reltol = 1-1e-10;
-            if (knn_found && distance2_Gyhat_nn < distance2_Gyhat_Gy * reltol) {
+            double proximity_tol = 1-1e-10;
+            if (knn_found && distance2_Gyhat_nn < distance2_Gyhat_Gy * proximity_tol) {
                 continue;
             }
             
