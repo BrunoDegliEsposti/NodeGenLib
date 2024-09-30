@@ -6,6 +6,7 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <algorithm>
 #include <Eigen/Dense>
 #include <nanoflann.hpp>
 

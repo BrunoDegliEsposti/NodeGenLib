@@ -12,6 +12,7 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <algorithm>
 #include "mex.h"
 #include "matrix.h"
 #include <Eigen/Dense>
@@ -167,6 +168,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Input","Nmax must be a scalar of numeric type");
     }
     size_t Nmax = (size_t)mxGetScalar(Nmax_mxArray);
+    size_t Z_size_limit = std::max((size_t)1000000,Nmax);
 
     // Unwrap seed
     if (!mxIsScalar(seed_mxArray) || !mxIsNumeric(seed_mxArray)) {
@@ -206,7 +208,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // Grow GY by iterating over all faces in the solid
     Nodes<3> GY;
     TopExp_Explorer faces(solids_map(iSolid),TopAbs_FACE);
-    for (int i = 0; faces.More(); faces.Next(), i++)
+    for (int i = 0; faces.More() && Nmax > 0; faces.Next(), i++)
     {
         // Fetch parametrization F and bounding box of parametric domain
         const TopoDS_Face &face = TopoDS::Face(faces.Current());
@@ -234,7 +236,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         // Grow GY by iterating over all edges in this face and update hmin
         double hmin = std::numeric_limits<double>::infinity();
         TopExp_Explorer edges(face,TopAbs_EDGE);
-        for (int j = 0; edges.More(); edges.Next(), j++)
+        for (int j = 0; edges.More() && Nmax > 0; edges.Next(), j++)
         {
             // Fetch parametrization g: [t1,t2] -> R^2
             const TopoDS_Edge &edge = TopoDS::Edge(edges.Current());
@@ -277,21 +279,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 GY.points.push_back(Fnew);
                 double s_face = face.Orientation() ? -1.0 : 1.0;
                 GY.normals.push_back(normal_from_jacobian(dFnew) * s_face);
+                Nmax = Nmax - 1;
             }
-            // Find hmin as the minimum distance between consecutive points in parameter space
+            // Find hmin as the minimum distance between consecutive nodes in parameter space
             for (size_t k = 0; k < Nt-1; k++) {
                 double dist = (g(t_ij.points[k+1])-g(t_ij.points[k])).norm();
                 hmin = std::min(hmin,dist);
             }
         }
-        // If hmin has not been updated, skip further processing because the face is negligible
+        // If hmin has not been updated, skip further processing because the face is too small
         if (hmin == std::numeric_limits<double>::infinity()) {
             continue;
         }
         // Grow Z_i by iterating over all edges in this face
         Nodes<2> Z_i;
         edges.ReInit();
-        for (int j = 0; edges.More(); edges.Next(), j++)
+        for (int j = 0; edges.More() && Nmax > 0; edges.Next(), j++)
         {
             // Fetch parametrization g: [t1,t2] -> R^2
             const TopoDS_Edge &edge = TopoDS::Edge(edges.Current());
@@ -322,8 +325,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             t_ij.points.push_back(tR);
             Nodes<2> gt = advancing_front<1,2>(aabb_g, Nodes<1>(), t_ij, g, dg,
                                                [hmin](const Point<2>) -> double {return hmin;},
-                                               10*Nmax, rng);
+                                               Z_size_limit, rng);
             size_t Ngt = gt.points.size();
+            if (Ngt == Z_size_limit) {
+                mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Discretization",
+                  "Number of nodes on trimming curve %d on face %d exceeded Z_size_limit", j+1, i+1);
+            }
             for (size_t k = 0; k < Ngt; k++) {
                 Z_i.points.push_back(gt.points[k]);
                 double s = (edge.Orientation() == face.Orientation()) ? 1.0 : -1.0;
@@ -332,12 +339,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         // Use the uniform boundary nodes Z_i to place points on the face
         Nodes<2> Y_i;
-        Nodes<3> GY_i = advancing_front<2,3>(aabb_F, Z_i, Y_i, F, dF, h, Nmax, rng);
+        Nodes<3> GY_i = advancing_front<2,3>(aabb_F, Z_i, Y_i, F, dF, h, Nmax + Z_i.points.size(), rng);
         // Append GY_i to GY skipping the first |Z_i| elements
         for (size_t k = Z_i.points.size(); k < GY_i.points.size(); k++) {
             GY.points.push_back(GY_i.points[k]);
             double s = face.Orientation() ? -1.0 : 1.0;
             GY.normals.push_back(GY_i.normals[k] * s);
+            Nmax = Nmax - 1;
         }
         // Plot parametric nodes if debug is enabled
         if (i+1 == iFaceDebug) {
