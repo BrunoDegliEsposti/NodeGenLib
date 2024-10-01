@@ -1,3 +1,14 @@
+# NodeGenLib - A library for advancing front node generation
+# Copyright (C) 2024 Bruno Degli Esposti
+#
+# This file is part of NodeGenLib.
+#
+# NodeGenLib is licensed under the GNU Lesser General Public License (LGPL), 
+# either version 3 or (at your option) any later version. See the LICENSE 
+# file in the root of the project for more details.
+#
+# This file is distributed without any warranty.
+
 # https://cmake.org/cmake/help/latest/manual/cmake-commands.7.html
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
