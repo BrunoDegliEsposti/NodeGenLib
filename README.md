@@ -19,8 +19,8 @@ more nodes are generated in the interior.
 - Integration with Open CASCADE Technology allows
 3D domains to be given in B-Rep format using STEP files.
 Trimmed geometries are supported.
-- The library has not been optimized yet.
-Current performance is about 100k nodes/second.
+- Current performance is about 100k nodes/second,
+and further optimizations are planned.
 - Variable node density is supported. The local node
 spacing around each point is prescribed by a scalar field
 passed as a lambda expression (C++) or function handle (MATLAB).
@@ -38,7 +38,7 @@ To install NodeGenLib, follow these steps:
 2. Install the C++ library "Open CASCADE Technology",
 including all possible sub-packages and development packages
 For example, on Ubuntu, install all the packages with the libocct prefix.
-On Mac OS, ```brew install opencascade``` is sufficient.
+On macOS, ```brew install opencascade``` is sufficient.
 3. Install the C++ library "Eigen", version 3.4 or newer.
 4. Optionally install the C++ library "nanoflann".
 If nanoflann is not installed, a new copy of the library
@@ -48,11 +48,12 @@ the current directory to the one that you have just downloaded.
 6. Run the ```cmake .``` command to generate appropriate build files.
 7. Run ```make``` to build NodeGenLib.
 8. Locate the newly generated MATLAB MEX functions and add
-the containing folder to MATLAB's search path.
+their containing folder to MATLAB's search path.
 
 ## Solution to frequent problems
 
-If the make command fails with an error related to fontconfig,
+- If the make command fails on a Linux distribution
+with an error related to fontconfig,
 install the development package for fontconfig,
 such as "fontconfig-devel".
 
@@ -79,3 +80,4 @@ and its generation number. Then, skip inclusion queries against
 aabb and Z if candidates belong to a sufficiently old generation.
 - Use parent node of y to prune candidates around y, and additionally
 use any accepted candidates to further prune candidates during expansion.
+- Feel free to suggest or contribute additional ideas for further improvements
