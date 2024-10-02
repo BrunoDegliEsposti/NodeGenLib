@@ -351,10 +351,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 mexErrMsgIdAndTxt("StepGenerateBoundaryNodes:Discretization",
                   "Number of nodes on trimming curve %d on face %d exceeded Z_size_limit", j+1, i+1);
             }
+            double s = (edge.Orientation() == face.Orientation()) ? 1.0 : -1.0;
             for (size_t k = 0; k < Ngt; k++) {
                 Z_i.points.push_back(gt.points[k]);
-                double s = (edge.Orientation() == face.Orientation()) ? 1.0 : -1.0;
                 Z_i.normals.push_back(gt.normals[k] * s);
+            }
+            Point<1> t_last1 = t_ij.points[Ngt-1];
+            Point<1> t_last2 = t_ij.points[Ngt-2];
+            Point<2> gt_last1 = gt.points[Ngt-1];
+            Point<2> gt_last2 = gt.points[Ngt-2];
+            if ((gt_last1-gt_last2).norm() > 1.2*hmin) {
+                Point<1> t_last = 0.5*t_last1 + 0.5*t_last2;
+                Normal<2> nu_last = normal_from_jacobian(dg(t_last));
+                Z_i.points.push_back(g(t_last));
+                Z_i.normals.push_back(nu_last * s);
             }
         }
         // Use the uniform boundary nodes Z_i to place points on the face
