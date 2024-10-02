@@ -36,7 +36,7 @@ To install NodeGenLib, follow these steps:
 
 1. Install a C++ compiler, MATLAB, and the build system CMake.
 2. Install the C++ library "Open CASCADE Technology",
-including all possible sub-packages and development packages
+including all possible sub-packages and development packages.
 For example, on Ubuntu, install all the packages with the libocct prefix.
 On macOS, ```brew install opencascade``` is sufficient.
 3. Install the C++ library "Eigen", version 3.4 or newer.
@@ -71,13 +71,18 @@ fits its design guidelines.
 
 ## Ideas for future work
 
-- Write some standalone demos/tests, so that performance
+- Write documentation to describe how NodeGenLib can be used
+as a header-only C++ library.
+- Write documentation to describe the MATLAB MEX functions
+provided by NodeGenLib, their input arguments and their
+output arguments.
+- Write standalone demos and tests, so that performance
 of the advancing front method can be profiled and optimized.
-The demo can also be used to check if NodeGenLib has been
-built and installed correctly.
+Tests are also needed to check if NodeGenLib has been
+built and installed correctly on a given system.
 - For each accepted candidate node, store the index of its parent node
-and its generation number. Then, skip inclusion queries against
-aabb and Z if candidates belong to a sufficiently old generation.
-- Use parent node of y to prune candidates around y, and additionally
+and its generation number (number of parents).
+Then, skip inclusion queries if candidates belong to a sufficiently old generation.
+- Use parent of node y to prune candidates around y, and additionally
 use any accepted candidates to further prune candidates during expansion.
 - Feel free to suggest or contribute additional ideas for further improvements
