@@ -19,8 +19,9 @@ more nodes are generated in the interior.
 - Integration with Open CASCADE Technology allows
 3D domains to be given in B-Rep format using STEP files.
 Trimmed geometries are supported.
-- Current performance is about 100k nodes/second,
-and further optimizations are planned.
+- Current performance is about 5k nodes/second in 3D using MATLAB.
+Easy opportunities for optimization have not been
+taken advantage of yet, although this is planned for the near future.
 - Variable node density is supported. The local node
 spacing around each point is prescribed by a scalar field
 passed as a lambda expression (C++) or function handle (MATLAB).
