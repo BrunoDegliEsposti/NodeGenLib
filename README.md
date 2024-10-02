@@ -64,7 +64,7 @@ See the LICENSE file for details.
 
 ## Contributing
 
-Pull requests are welcome, but please contact the author
+Pull requests are welcome, but please contact the main author
 first at brunodegliesposti@gmail.com to make sure that your
 contribution falls within the scope of the library and
 fits its design guidelines.
