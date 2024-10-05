@@ -10,13 +10,17 @@
 # This file is distributed without any warranty.
 
 # https://cmake.org/cmake/help/latest/manual/cmake-commands.7.html
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 
 project("NodeGenLib" CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_compile_options(-Wall -Wextra -Wpedantic)
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 
 include(FetchContent)
 FetchContent_Declare(
@@ -32,6 +36,9 @@ find_package(Eigen3 3.4 REQUIRED)
 find_package(OpenCASCADE REQUIRED)
 include_directories(SYSTEM ${OpenCASCADE_INCLUDE_DIR})
 link_directories(${OpenCASCADE_LIBRARY_DIR})
+if(UNIX AND NOT APPLE)
+    set(CMAKE_BUILD_RPATH ${OpenCASCADE_LIBRARY_DIR})
+endif()
 
 matlab_add_mex(
 	NAME advancing_front
