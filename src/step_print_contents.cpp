@@ -119,6 +119,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
               contents.NbSharedWires(),contents.NbWires(),contents.NbFreeWires());
     mexPrintf("Number of edges: %d unique, %d non-unique, %d free from wires\n",
               contents.NbSharedEdges(),contents.NbEdges(),contents.NbFreeEdges());
-    mexPrintf("Number of vertices: %d unique, %d non-unique, %d free from edges\n",
+    mexPrintf("Number of vertices: %d unique, %d non-unique\n",
               contents.NbSharedVertices(),contents.NbVertices());
 }
