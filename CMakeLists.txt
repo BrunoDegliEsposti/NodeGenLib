@@ -46,7 +46,7 @@ matlab_add_mex(
 target_compile_features(advancing_front
     PUBLIC cxx_std_17)
 target_compile_options(advancing_front
-    PUBLIC "-Wall -Wextra -Wpedantic")
+    PUBLIC -Wall -Wextra -Wpedantic)
 target_include_directories(advancing_front
     PUBLIC include/NodeGenLib)
 target_link_libraries(advancing_front
@@ -63,7 +63,7 @@ matlab_add_mex(
 target_compile_features(step_generate_boundary_nodes
     PUBLIC cxx_std_17)
 target_compile_options(step_generate_boundary_nodes
-    PUBLIC "-Wall -Wextra -Wpedantic")
+    PUBLIC -Wall -Wextra -Wpedantic)
 target_include_directories(step_generate_boundary_nodes
     PUBLIC include/NodeGenLib)
 target_include_directories(step_generate_boundary_nodes
@@ -87,7 +87,7 @@ matlab_add_mex(
 target_compile_features(step_plot_pcurves
     PUBLIC cxx_std_17)
 target_compile_options(step_plot_pcurves
-    PUBLIC "-Wall -Wextra -Wpedantic")
+    PUBLIC -Wall -Wextra -Wpedantic)
 target_include_directories(step_plot_pcurves
     SYSTEM PUBLIC "${OpenCASCADE_INCLUDE_DIR}")
 target_link_directories(step_plot_pcurves
@@ -105,7 +105,7 @@ matlab_add_mex(
 target_compile_features(step_print_contents
     PUBLIC cxx_std_17)
 target_compile_options(step_print_contents
-    PUBLIC "-Wall -Wextra -Wpedantic")
+    PUBLIC -Wall -Wextra -Wpedantic)
 target_include_directories(step_print_contents
     SYSTEM PUBLIC "${OpenCASCADE_INCLUDE_DIR}")
 target_link_directories(step_print_contents
@@ -123,7 +123,7 @@ matlab_add_mex(
 target_compile_features(step_print_faces_info
     PUBLIC cxx_std_17)
 target_compile_options(step_print_faces_info
-    PUBLIC "-Wall -Wextra -Wpedantic")
+    PUBLIC -Wall -Wextra -Wpedantic)
 target_include_directories(step_print_faces_info
     SYSTEM PUBLIC "${OpenCASCADE_INCLUDE_DIR}")
 target_link_directories(step_print_faces_info

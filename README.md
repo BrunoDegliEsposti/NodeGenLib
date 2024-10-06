@@ -45,17 +45,19 @@ install all the packages with the libocct prefix.
 On macOS, ```brew install opencascade``` is enough.
 5. Install the C++ library "Eigen", minimum version 3.4.
 6. Clone this repository and, using a terminal, change
-the current directory to the one that has been downloaded.
-7. Execute the command ```cmake -D CMAKE_BUILD_TYPE=Release -B build```
+the current directory to it.
+7. Create a build directory inside NodeGenLib
+and move there: ```mkdir build && cd build```.
+8. Execute the command ```cmake -D CMAKE_BUILD_TYPE=Release ..```
 to generate appropriate build files.
-9. Run ```cmake --build build``` to build NodeGenLib.
-10. Check that a folder named Release has been created inside
-the build folder, and that it contains MATLAB MEX functions.
-Add the Release folder to MATLAB's search path.
+9. Run ```cmake --build .``` to build NodeGenLib.
+10. Locate the newly generated MEX functions inside the build
+folder (or a subfolder called Release). Add the folder containing
+the MEX functions to MATLAB's search path.
 
 ## Solution to frequent problems
 
-- If the make command fails on a Linux distribution
+- If the build command fails on a Linux distribution
 with an error related to fontconfig,
 install the development package for fontconfig,
 such as "fontconfig-devel".
