@@ -36,7 +36,7 @@ outside of the trimmed parameter domain of each patch.
 To install NodeGenLib, follow these steps:
 
 1. Install a compiler that supports C++17.
-2. Install the build system CMake, minimum version 3.24.
+2. Install the build system CMake, minimum version 3.12.
 3. Install MATLAB, minimum version R2018a.
 4. Install the C++ library "Open CASCADE Technology",
 minimum version 7.7.0. Include all possible sub-packages
@@ -44,17 +44,14 @@ and development packages. For example, on Ubuntu,
 install all the packages with the libocct prefix.
 On macOS, ```brew install opencascade``` is enough.
 5. Install the C++ library "Eigen", minimum version 3.4.
-6. Optionally install the C++ library "nanoflann".
-If nanoflann is not installed, a new copy of the library
-will be automatically downloaded when building NodeGenLib.
-7. Clone this repository and, using a terminal, change
-the current directory to the one that you have just downloaded.
-8. Run the ```cmake .``` command to generate appropriate build files.
-If the ```-DCMAKE_BUILD_TYPE``` flag is not specified,
-the default build type is Release.
-9. Run ```make``` to build NodeGenLib.
-10. Locate the newly generated MATLAB MEX functions and add
-their containing folder to MATLAB's search path.
+6. Clone this repository and, using a terminal, change
+the current directory to the one that has been downloaded.
+7. Execute the command ```cmake -D CMAKE_BUILD_TYPE=Release -B build```
+to generate appropriate build files.
+9. Run ```cmake --build build``` to build NodeGenLib.
+10. Check that a folder named Release has been created inside
+the build folder, and that it contains MATLAB MEX functions.
+Add the Release folder to MATLAB's search path.
 
 ## Solution to frequent problems
 
