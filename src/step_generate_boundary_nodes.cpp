@@ -253,8 +253,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 {dFp1.Z(), dFp2.Z()}};
             return J;
         };
-        // Grow GY by iterating over all edges in this face and update hmin
-        double hmin = std::numeric_limits<double>::infinity();
+        // Grow GY by iterating over all edges in this face and update delta
+        double delta = std::numeric_limits<double>::infinity();
         TopExp_Explorer edges(face,TopAbs_EDGE);
         for (int j = 0; edges.More() && Nmax > 0; edges.Next(), j++)
         {
@@ -301,14 +301,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 GY.normals.push_back(normal_from_jacobian(dFnew) * s_face);
                 Nmax = Nmax - 1;
             }
-            // Find hmin as the minimum distance between consecutive nodes in parameter space
+            // Find delta as the minimum distance between consecutive nodes in parameter space
             for (size_t k = 0; k < Nt-1; k++) {
                 double dist = (g(t_ij.points[k+1])-g(t_ij.points[k])).norm();
-                hmin = std::min(hmin,dist);
+                delta = std::min(delta,dist);
             }
         }
-        // If hmin has not been updated, skip further processing because the face is too small
-        if (hmin == std::numeric_limits<double>::infinity()) {
+        // If delta has not been updated, skip further processing because the face is too small
+        if (delta == std::numeric_limits<double>::infinity()) {
             continue;
         }
         // Grow Z_i by iterating over all edges in this face
@@ -332,19 +332,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 g_handle->D1(t(0),gt,dgt);
                 return {dgt.X(), dgt.Y()};
             };
-            // Discretize the interval [t1,t2] according to constant spacing hmin.
+            // Discretize the interval [t1,t2] according to constant spacing delta.
             // If the edge is too short, skip the discretization process
             AABB<1> aabb_g(t1,t2);
             Nodes<1> t_ij;
-            Point<1> tL(t1 + hmin/(2*dg(Point<1>(t1)).norm()+1e-15));
-            Point<1> tR(t2 - hmin/(2*dg(Point<1>(t2)).norm()+1e-15));
+            Point<1> tL(t1 + delta/(2*dg(Point<1>(t1)).norm()+1e-15));
+            Point<1> tR(t2 - delta/(2*dg(Point<1>(t2)).norm()+1e-15));
             if (tL(0) >= tR(0)) {
                 continue;
             }
             t_ij.points.push_back(tL);
             t_ij.points.push_back(tR);
             Nodes<2> gt = advancing_front<1,2>(aabb_g, Nodes<1>(), t_ij, g, dg,
-                                               [hmin](const Point<2>) -> double {return hmin;},
+                                               [delta](const Point<2>) -> double {return delta;},
                                                Z_size_limit, rng);
             size_t Ngt = gt.points.size();
             if (Ngt == Z_size_limit) {
@@ -360,7 +360,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             Point<1> t_last2 = t_ij.points[Ngt-2];
             Point<2> gt_last1 = gt.points[Ngt-1];
             Point<2> gt_last2 = gt.points[Ngt-2];
-            if ((gt_last1-gt_last2).norm() > 1.2*hmin) {
+            if ((gt_last1-gt_last2).norm() > 1.2*delta) {
                 Point<1> t_last = 0.5*t_last1 + 0.5*t_last2;
                 Normal<2> nu_last = normal_from_jacobian(dg(t_last));
                 Z_i.points.push_back(g(t_last));
