@@ -229,19 +229,20 @@ double candidates_buf_3D[] = {
 constexpr size_t Ncandidates[4] = {0, sizeof(candidates_buf_1D)/sizeof(double),
     sizeof(candidates_buf_2D)/(2*sizeof(double)), sizeof(candidates_buf_3D)/(3*sizeof(double))};
 
-template <int dim>
-bool inclusion_query_strict(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTree<dim> &kdtree)
+constexpr size_t Klut[4] = {0,1,2,4};
+
+template <int d, size_t K>
+bool INNK_all(const Point<d> &y, const Nodes<d> &Z, const StaticKDTree<d> &kdtree)
 {
-    // Get indices of a sufficient number of nearest neighbors
-    constexpr size_t Klut[] = {0,1,2,4};
-    size_t Knn_index[Klut[dim]];
-    double Knn_dist2[Klut[dim]];
-    size_t K = kdtree.knnSearch(y.data(), Klut[dim], Knn_index, Knn_dist2);
+    // Get indices and distances of K nearest neighbors
+    size_t Knn_index[K];
+    double Knn_dist2[K];
+    size_t KK = kdtree.knnSearch(y.data(), K, Knn_index, Knn_dist2);
     
-    // Check if y is in the half-space dot(z_i-y,nz_i) > 0 for all K nearest-neighbors z_i
-    for (size_t i = 0; i < K; i++) {
-        Point<dim> z = Z.points[Knn_index[i]];
-        Normal<dim> nz = Z.normals[Knn_index[i]];
+    // Check if y is in the half-space dot(z_i-y,nz_i) > 0 for all K nearest neighbors z_i
+    for (size_t i = 0; i < KK; i++) {
+        Point<d> z = Z.points[Knn_index[i]];
+        Normal<d> nz = Z.normals[Knn_index[i]];
         if (nz.dot(z - y) <= 0) {
             return false;
         }
@@ -249,58 +250,57 @@ bool inclusion_query_strict(const Point<dim> &y, const Nodes<dim> &Z, const Stat
     return true;
 }
 
-template <int dim>
-bool inclusion_query(const Point<dim> &y, const Nodes<dim> &Z, const StaticKDTree<dim> &kdtree)
+template <int d, size_t K>
+bool INNK_relocate(const Point<d> &y, const Nodes<d> &Z, const StaticKDTree<d> &kdtree, int m = 3)
 {
-    // Get indices of a sufficient number of nearest neighbors
-    constexpr size_t Klut[] = {0,1,2,4};
-    size_t Knn_index[Klut[dim]];
-    double Knn_dist2[Klut[dim]];
-    size_t K = kdtree.knnSearch(y.data(), Klut[dim], Knn_index, Knn_dist2);
+    // Get indices and distances of K nearest neighbors
+    size_t Knn_index[K];
+    double Knn_dist2[K];
+    size_t KK = kdtree.knnSearch(y.data(), K, Knn_index, Knn_dist2);
     
-    // Check if y is inside or outside for all K nearest-neighbors z_i
-    bool all_inside = true;
-    bool any_inside = false;
-    for (size_t i = 0; i < K; i++) {
-        Point<dim> z = Z.points[Knn_index[i]];
-        Normal<dim> nz = Z.normals[Knn_index[i]];
-        bool is_inside = (nz.dot(z - y) > 0);
-        all_inside = all_inside && is_inside;
-        any_inside = any_inside || is_inside;
+    // Check if y is inside or outside for all K nearest neighbors z_i
+    size_t n = 0;
+    for (size_t i = 0; i < KK; i++) {
+        Point<d> z = Z.points[Knn_index[i]];
+        Normal<d> nz = Z.normals[Knn_index[i]];
+        if (nz.dot(z - y) > 0) {
+            n = n + 1;
+        }
     }
-    if (all_inside) {
+    if (n == KK) {
         return true;
     }
-    if (!any_inside) {
+    if (n == 0) {
         return false;
     }
     
     // Edge case: y is inside wrt to some z_i, and outside wrt to some z_j.
     // Start by rejecting points too close to the boundary, for which nothing meaningful can be done.
-    for (size_t i = 0; i < K; i++) {
-        Point<dim> z_i = Z.points[Knn_index[i]];
-        double maxr2 = 0.0;
-        for (size_t j = 0; j < K; j++) {
-            Point<dim> z_j = Z.points[Knn_index[j]];
-            maxr2 = std::max(maxr2,(z_j-z_i).squaredNorm());
+    double squaredDiameter = 0;
+    for (size_t i = 0; i < KK; i++) {
+        Point<d> z_i = Z.points[Knn_index[i]];
+        for (size_t j = 0; j < KK; j++) {
+            Point<d> z_j = Z.points[Knn_index[j]];
+            squaredDiameter = std::max(squaredDiameter,(z_j-z_i).squaredNorm());
         }
-        if ((y-z_i).squaredNorm() <= maxr2) {
-            return false;
-        }
+    }
+    Point<d> v = y - Z.points[Knn_index[0]];
+    if (v.squaredNorm() <= 4*squaredDiameter) {
+        return false;
     }
     
-    // Wiggle the point y to solve the ambiguity. Include points far enough
-    // in the interior, and reject points far enough in the exterior.
-    double min_distance = sqrt(Knn_dist2[0]);
-    for (size_t i = 0; i < dim; i++) {
-        Point<dim> dy = Point<dim>::Zero();
-        dy(i) = 0.5 * min_distance;
-        if (!inclusion_query_strict<dim>(y + dy, Z, kdtree) ||
-            !inclusion_query_strict<dim>(y - dy, Z, kdtree)) {
-            return false;
-        }
+    // Try a recursive relocation strategy to find a non-ambiguous y.
+    if (m <= 0) {
+        return false;
     }
-    return true;
+    Eigen::Index jmin;
+    v.cwiseAbs().minCoeff(&jmin);
+    Point<d> dy = Point<d>::Zero();
+    dy(jmin) = 0.8 * v.norm();
+    if (INNK_relocate<d,K>(y+dy,Z,kdtree,m-1) || INNK_relocate<d,K>(y-dy,Z,kdtree,m-1)) {
+        return true;
+    }
+    return false;
 }
 
 template <int d, int n>
@@ -397,7 +397,7 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
             if (!aabb.contains(yhat)) {
                 continue;
             }
-            if (!Z.points.empty() && !inclusion_query<d>(yhat,Z,kdtree_Z)) {
+            if (!Z.points.empty() && !INNK_relocate<d,Klut[d]>(yhat,Z,kdtree_Z)) {
                 continue;
             }
             
