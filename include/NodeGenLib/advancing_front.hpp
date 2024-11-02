@@ -229,7 +229,7 @@ double candidates_buf_3D[] = {
 constexpr size_t Ncandidates[4] = {0, sizeof(candidates_buf_1D)/sizeof(double),
     sizeof(candidates_buf_2D)/(2*sizeof(double)), sizeof(candidates_buf_3D)/(3*sizeof(double))};
 
-constexpr size_t Klut[4] = {0,1,2,4};
+constexpr size_t Klut[4] = {0,1,2,5};
 
 template <int d, size_t K>
 bool INNK_all(const Point<d> &y, const Nodes<d> &Z, const StaticKDTree<d> &kdtree)
@@ -318,7 +318,7 @@ Normal<n> normal_from_jacobian(const Eigen::Matrix<double,n,d> &J)
 
 template <int d, int n, typename G_t, typename dG_t, typename h_t>
 Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
-    G_t G, dG_t dG, h_t h, size_t Nmax, std::mt19937_64 rng)
+    G_t G, dG_t dG, h_t h, size_t Nmax, std::mt19937_64 rng, bool offset=false)
 /* Input:
  *   Dimension d of parameter space
  *   Dimension n >= d of model space
@@ -340,9 +340,12 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
     if (Y.points.empty()) {
         if (Z.points.empty()) {
             Y.points.push_back(aabb_random_point(aabb,rng));
+            offset = false;
         } else {
             Y.points = Z.points;
         }
+    } else {
+        offset = false;
     }
 
     // Initialize the set GY as G(Y). Make sure that GY.points.size() <= Nmax
@@ -389,8 +392,15 @@ Nodes<n> advancing_front(const AABB<d> &aabb, const Nodes<d> &Z, Nodes<d> &Y,
         // Iterate over candidate nodes around y
         for (size_t j = 0; j < Ncandidates[d] && NY < Nmax; j++) {
             // Generate new candidate yhat around y
-            Point<d> dy = M * random_rotation * candidates.col(j);
-            double alpha = hGy / ((dGy*dy).norm()+1e-15);
+            Point<d> dy;
+            double alpha;
+            if (offset && i < Z.points.size()) {
+                dy = -M * Z.normals[i];
+                alpha = 0.5 * hGy / ((dGy*dy).norm()+1e-15);
+            } else {
+                dy = M * random_rotation * candidates.col(j);
+                alpha = hGy / ((dGy*dy).norm()+1e-15);
+            }
             Point<d> yhat = y + alpha * dy;
             
             // Test if yhat is inside the parametric domain

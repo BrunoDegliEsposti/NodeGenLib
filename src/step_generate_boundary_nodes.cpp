@@ -286,21 +286,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             Nodes<1> t_ij;
             advancing_front<1,3>(aabb_G, Nodes<1>(), t_ij, G, dG, h, Nmax, rng);
             size_t Nt = t_ij.points.size();
-            // Discretize the image of g in parametric domain
-            for (size_t k = 0; k < Nt; k++) {
-                Point<1> t = t_ij.points[k];
-                Point<2> gt = g(t);
-                double s_edge = (edge.Orientation() == face.Orientation()) ? 1.0 : -1.0;
-                Point<2> nu_edge = normal_from_jacobian<1,2>(dg(t)) * s_edge;
-                double etol = BRep_Tool::Tolerance(edge);
-                double alpha = 2.5 * etol / ((dF(gt)*nu_edge).norm() + 1e-15);
-                Point<3> Fnew = F(gt - alpha*nu_edge);
-                Eigen::Matrix<double,3,2> dFnew = dF(gt - alpha*nu_edge);
-                GY.points.push_back(Fnew);
-                double s_face = face.Orientation() ? -1.0 : 1.0;
-                GY.normals.push_back(normal_from_jacobian(dFnew) * s_face);
-                Nmax = Nmax - 1;
-            }
             // Find delta as the minimum distance between consecutive nodes in parameter space
             for (size_t k = 0; k < Nt-1; k++) {
                 double dist = (g(t_ij.points[k+1])-g(t_ij.points[k])).norm();
@@ -369,7 +354,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         // Use the uniform boundary nodes Z_i to place points on the face
         Nodes<2> Y_i;
-        Nodes<3> GY_i = advancing_front<2,3>(aabb_F, Z_i, Y_i, F, dF, h, Nmax + Z_i.points.size(), rng);
+        Nodes<3> GY_i = advancing_front<2,3>(aabb_F, Z_i, Y_i, F, dF, h, Nmax + Z_i.points.size(), rng, true);
         // Append GY_i to GY skipping the first |Z_i| elements
         for (size_t k = Z_i.points.size(); k < GY_i.points.size(); k++) {
             GY.points.push_back(GY_i.points[k]);

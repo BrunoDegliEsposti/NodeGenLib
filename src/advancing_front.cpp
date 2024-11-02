@@ -138,7 +138,7 @@ struct FunctionHandlesLoader {
 
 template <int d, int n>
 void mexFunctionTemplated(mxArray *plhs[], const mxArray *prhs[])
-// function [Y,GY,nGY] = advancing_front(aabb,Z_points,Z_normals,Y0,G,dG,h,Nmax,seed)
+// function [Y,GY,nGY] = advancing_front(aabb,Z_points,Z_normals,Y0,G,dG,h,Nmax,seed,offset)
 {
     // Rename input and output arguments
     const mxArray *aabb_mxArray = prhs[0];
@@ -150,6 +150,7 @@ void mexFunctionTemplated(mxArray *plhs[], const mxArray *prhs[])
     const mxArray *h_mxArray = prhs[6];
     const mxArray *Nmax_mxArray = prhs[7];
     const mxArray *seed_mxArray = prhs[8];
+    const mxArray *offset_mxArray = prhs[9];
     mxArray *Y_mxArray = nullptr;
     mxArray *GY_mxArray = nullptr;
     mxArray *nGY_mxArray = nullptr;
@@ -225,10 +226,16 @@ void mexFunctionTemplated(mxArray *plhs[], const mxArray *prhs[])
     uint64_t seed = (uint64_t)mxGetScalar(seed_mxArray);
     std::mt19937_64 rng(seed);
     
+    // Unwrap offset
+    if (!mxIsScalar(offset_mxArray) || !mxIsLogical(offset_mxArray)) {
+        mexErrMsgIdAndTxt("AdvancingFront:Input","offset must be a scalar of numeric type");
+    }
+    bool offset = mxIsLogicalScalarTrue(offset_mxArray);
+    
     Nodes<n> GY = advancing_front<d,n>(aabb, Z, Y,
         std::bind(&FunctionHandlesLoader<d,n>::G,fhl,std::placeholders::_1),
         std::bind(&FunctionHandlesLoader<d,n>::dG,fhl,std::placeholders::_1),
-        std::bind(&FunctionHandlesLoader<d,n>::h,fhl,std::placeholders::_1), Nmax, rng);
+        std::bind(&FunctionHandlesLoader<d,n>::h,fhl,std::placeholders::_1), Nmax, rng, offset);
     
     // Create Y
     size_t NY = Y.points.size();
@@ -266,10 +273,10 @@ void mexFunctionTemplated(mxArray *plhs[], const mxArray *prhs[])
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-// function [Y,GY,nGY] = advancing_front(d,n,aabb,Z_points,Z_normals,Y0,G,dG,h,Nmax,seed)
+// function [Y,GY,nGY] = advancing_front(d,n,aabb,Z_points,Z_normals,Y0,G,dG,h,Nmax,seed,offset)
 {
     // Rename input and output arguments
-    if (nrhs != 11) {
+    if (nrhs != 12) {
         mexErrMsgIdAndTxt("AdvancingFront:Input","Wrong number of input arguments");
     }
     if (nlhs != 3) {
