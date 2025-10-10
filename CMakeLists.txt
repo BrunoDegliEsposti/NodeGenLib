@@ -53,6 +53,10 @@ target_link_libraries(advancing_front
     Eigen3::Eigen)
 target_link_libraries(advancing_front
     nanoflann::nanoflann)
+if (APPLE)
+    target_link_options(advancing_front
+        PUBLIC -Wl -ld_classic)
+endif()
 
 # Build instructions for MEX function step_generate_boundary_nodes
 matlab_add_mex(
@@ -77,6 +81,10 @@ target_link_libraries(step_generate_boundary_nodes
 foreach(LIB ${OpenCASCADE_LIBRARIES})
     target_link_libraries(step_generate_boundary_nodes ${LIB})
 endforeach()
+if (APPLE)
+    target_link_options(step_generate_boundary_nodes
+        PUBLIC -Wl -ld_classic)
+endif()
 
 # Build instructions for MEX function step_plot_pcurves
 matlab_add_mex(
@@ -95,6 +103,10 @@ target_link_directories(step_plot_pcurves
 foreach(LIB ${OpenCASCADE_LIBRARIES})
     target_link_libraries(step_plot_pcurves ${LIB})
 endforeach()
+if (APPLE)
+    target_link_options(step_plot_pcurves
+        PUBLIC -Wl -ld_classic)
+endif()
 
 # Build instructions for MEX function step_print_contents
 matlab_add_mex(
@@ -113,6 +125,10 @@ target_link_directories(step_print_contents
 foreach(LIB ${OpenCASCADE_LIBRARIES})
     target_link_libraries(step_print_contents ${LIB})
 endforeach()
+if (APPLE)
+    target_link_options(step_print_contents
+        PUBLIC -Wl -ld_classic)
+endif()
 
 # Build instructions for MEX function step_print_faces_info
 matlab_add_mex(
@@ -131,3 +147,7 @@ target_link_directories(step_print_faces_info
 foreach(LIB ${OpenCASCADE_LIBRARIES})
     target_link_libraries(step_print_faces_info ${LIB})
 endforeach()
+if (APPLE)
+    target_link_options(step_print_faces_info
+        PUBLIC -Wl -ld_classic)
+endif()
