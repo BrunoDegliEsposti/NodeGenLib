@@ -15,7 +15,7 @@ cmake_minimum_required(VERSION 3.12)
 project(NodeGenLib VERSION 0.2 LANGUAGES CXX)
 
 find_package(Matlab REQUIRED)
-find_package(Eigen3 3.4 REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(OpenCASCADE REQUIRED)
 
 option(NANOFLANN_BUILD_EXAMPLES "Build nanoflann examples" OFF)
