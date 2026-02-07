@@ -41,6 +41,7 @@ endif()
 matlab_add_mex(
 	NAME advancing_front
 	SRC src/advancing_front.cpp
+    DOCUMENTATION ${CMAKE_CURRENT_SOURCE_DIR}/docs/advancing_front.txt
 	R2018a
 )
 target_compile_features(advancing_front

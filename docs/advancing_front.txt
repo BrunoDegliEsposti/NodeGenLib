@@ -1,0 +1,26 @@
+% advancing_front.m Help file for advancing_front MEX-file.
+% 
+% CALLING SYNTAX
+% [Y,GY,nGY] = advancing_front(d,n,aabb,Z_points,Z_normals,Y0,G,dG,h,Nmax,seed,offset)
+% 
+% INPUTS
+% d: dimension of parameter domain
+% n: dimension of physical domain
+% aabb: bounding box around parameter domain. Matrix of size (2,d)
+% Z_points: points on the boundary of parameter domain (can be empty)
+% Z_normals: outward-pointing normals on the boundary of parameter domain.
+%     If Z_points are empty, this argument can be empty as well.
+% Y0: starting nodes for advancing front algorithm. If empty, Z_points are used.
+%     If Z_points are also empty, a random node in aabb is used.
+% G: map from parameter domain to physical domain. Has type signature (Npts,d) -> (Npts,n)
+% dG: Jacobian of G. Has type signature (Npts,d) -> (Npts,n,d)
+% h: target spacing of generated nodes in the physical domain
+% Nmax: upper bound to the size of the output GY
+% seed: random number generator seed
+% offset: boolean to improve quality along edges of multipatch domains
+% 
+% OUTPUTS
+% Y: nodes placed in parameter space. Will contain Y0
+% GY: nodes placed in physical space. Will have the same size as Y
+% nGY: outward-pointing normals at nodes GY (only if d == n-1)
+%
