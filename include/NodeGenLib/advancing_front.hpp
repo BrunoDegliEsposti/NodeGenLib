@@ -94,7 +94,7 @@ template <int dim>
 Point<dim> aabb_random_point(const AABB<dim> &aabb, std::mt19937_64 &rng)
 {
     Point<dim> p;
-    std::uniform_real_distribution<double> uniform(0.0, 1.0);
+    std::uniform_real_distribution<double> uniform(0.25, 0.75);
     for (size_t i = 0; i < dim; i++) {
         p[i] = uniform(rng);
     }
