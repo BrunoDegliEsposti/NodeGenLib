@@ -20,11 +20,12 @@ find_package(OpenCASCADE REQUIRED)
 
 option(NANOFLANN_BUILD_EXAMPLES "Build nanoflann examples" OFF)
 option(NANOFLANN_BUILD_TESTS "Build nanoflann unit tests" OFF)
+option(BUILD_TESTING "Build nanoflann unit tests" OFF)
 include(FetchContent)
 FetchContent_Declare(
   nanoflann
   GIT_REPOSITORY https://github.com/jlblancoc/nanoflann.git
-  GIT_TAG v1.6.1
+  GIT_TAG a9051da7436ec43d2503ff6414e9e53ed2eebd0c #v1.13.0
 )
 FetchContent_MakeAvailable(nanoflann)
 
