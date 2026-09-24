@@ -37,9 +37,28 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_BUILD_RPATH "${OpenCASCADE_LIBRARY_DIR}")
 endif()
 
-# Build instructions for MEX function advancing_front
+# On macOS, MATLAB supplies entry-point helpers such as
+# _mexCreateMexFunction() when it loads the MEX file.
+# We need to allow such symbols to be resolved dynamically.
+# Because of a weird macOS issue with undefined symbols
+# https://gitlab.haskell.org/ghc/ghc/-/work_items/26166
+# the most robust fix is to exclude the symbol list
+# in cppMexFunction.map, since we only rely on the C API.
+# In this way there are no undefined symbols to ignore.
+function(fix_macos_linker_issue target)
+    if(APPLE)
+        get_target_property(_flags "${target}" LINK_FLAGS)
+        string(REPLACE
+            " -Wl,-exported_symbols_list,${Matlab_EXTERN_LIBRARY_DIR}/cppMexFunction.map"
+            "" _flags "${_flags}")
+        set_property(TARGET "${target}" PROPERTY LINK_FLAGS "${_flags}")
+    endif()
+endfunction()
+
+# Build instructions for MEX function advancing_front.
 matlab_add_mex(
 	NAME advancing_front
+    MODULE
 	SRC src/advancing_front.cpp
     DOCUMENTATION ${CMAKE_CURRENT_SOURCE_DIR}/docs/advancing_front.txt
 	R2018a
@@ -54,14 +73,12 @@ target_link_libraries(advancing_front
     Eigen3::Eigen)
 target_link_libraries(advancing_front
     nanoflann::nanoflann)
-if (APPLE)
-    target_link_options(advancing_front
-        PUBLIC -Wl -ld_classic)
-endif()
+fix_macos_linker_issue(advancing_front)
 
 # Build instructions for MEX function step_generate_boundary_nodes
 matlab_add_mex(
     NAME step_generate_boundary_nodes
+    MODULE
     SRC src/step_generate_boundary_nodes.cpp
     R2018a
 )
@@ -82,14 +99,12 @@ target_link_libraries(step_generate_boundary_nodes
 foreach(LIB ${OpenCASCADE_LIBRARIES})
     target_link_libraries(step_generate_boundary_nodes ${LIB})
 endforeach()
-if (APPLE)
-    target_link_options(step_generate_boundary_nodes
-        PUBLIC -Wl -ld_classic)
-endif()
+fix_macos_linker_issue(step_generate_boundary_nodes)
 
 # Build instructions for MEX function step_plot_pcurves
 matlab_add_mex(
     NAME step_plot_pcurves
+    MODULE
     SRC src/step_plot_pcurves.cpp
     R2018a
 )
@@ -104,14 +119,12 @@ target_link_directories(step_plot_pcurves
 foreach(LIB ${OpenCASCADE_LIBRARIES})
     target_link_libraries(step_plot_pcurves ${LIB})
 endforeach()
-if (APPLE)
-    target_link_options(step_plot_pcurves
-        PUBLIC -Wl -ld_classic)
-endif()
+fix_macos_linker_issue(step_plot_pcurves)
 
 # Build instructions for MEX function step_print_contents
 matlab_add_mex(
     NAME step_print_contents
+    MODULE
     SRC src/step_print_contents.cpp
     R2018a
 )
@@ -126,14 +139,12 @@ target_link_directories(step_print_contents
 foreach(LIB ${OpenCASCADE_LIBRARIES})
     target_link_libraries(step_print_contents ${LIB})
 endforeach()
-if (APPLE)
-    target_link_options(step_print_contents
-        PUBLIC -Wl -ld_classic)
-endif()
+fix_macos_linker_issue(step_print_contents)
 
 # Build instructions for MEX function step_print_faces_info
 matlab_add_mex(
     NAME step_print_faces_info
+    MODULE
     SRC src/step_print_faces_info.cpp
     R2018a
 )
@@ -148,7 +159,4 @@ target_link_directories(step_print_faces_info
 foreach(LIB ${OpenCASCADE_LIBRARIES})
     target_link_libraries(step_print_faces_info ${LIB})
 endforeach()
-if (APPLE)
-    target_link_options(step_print_faces_info
-        PUBLIC -Wl -ld_classic)
-endif()
+fix_macos_linker_issue(step_print_faces_info)
